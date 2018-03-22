@@ -129,7 +129,7 @@ function ENT:Use( player, caller )
 		player:PrintMessage(4, "Spawn point cleared.")
 	else
 		linkPlayerToSpawnPoint( player, self.Entity )
-		player:PrintMessage(4, "Spawn point set.")
+		player:PrintMessage(4, "Spawn point set. Say !clearspawn to unset.")
 	end
 end 
 
