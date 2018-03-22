@@ -11,7 +11,7 @@ spawnPointCommands = {
 -- Helper Functions
 function createPlayerList( players )
 	local playerList = {}
-	for player, _ in pairs( players) do
+	for _, player in pairs( players ) do
 		playerList[player] = true
 	end
 	
