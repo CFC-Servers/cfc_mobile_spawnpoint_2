@@ -2,6 +2,47 @@ AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 include( 'shared.lua' )
 
+spawnPointCommands = {
+	["clearSpawnPoint"] = { "!clearspawn" }
+}
+
+function createPlayerList( players )
+	local playerList = {}
+	table.forEach( players, function( _, player )
+		playerList[player] = true
+	end)
+	
+	return playerList
+end
+
+function linkPlayerToSpawnPoint( player, spawnPoint )
+	player.LinkedSpawnPoint = spawnPoint
+	spawnPoint.linkedPlayers[player] = "Linked"
+end
+
+function unlinkPlayerFromSpawnPoint( player, spawnPoint )
+	player.LinkedSpawnPoint = nil
+	spawnPoint.linkedPlayers[player] = nil
+end
+
+function unlinkAllPlayersFromSpawnPoint( spawnPoint )
+	local linkedPlayers = spawnPoint.linkedPlayers
+	table.forEach( linkedPlayers, function( _, player )
+		unlinkPlayerFromSpawnPoint( spawnPoint, player )
+	end)
+end
+
+function clearSpawnCommand( player, text, _, _ )
+	local text = string.lower( text )
+	local clearSpawnCommands = spawnPointCommands.clearSpawnPoint
+	
+	if ( clearSpawnCommands[text] ) then
+		local linkedSpawnPoint = player.linkedSpawnPoint	
+		unlinkPlayerFromSpawnPoint( player, linkedSpawnPoint )
+	end
+end
+hook.Remove( "PlayerSay", "clearSpawnPointCommand", clearSpawnPointCommand )
+
 function ENT:SpawnFunction( ply, tr )
 	if ( !tr.Hit ) then return end
 		local SpawnPos = tr.HitPos
@@ -14,7 +55,6 @@ end
 
 function ENT:Initialize()
 
-	local selfent = self.Entity
 	local effectdata1 = EffectData()
 		effectdata1:SetOrigin( self.Entity:GetPos() )
 	util.Effect( "spawnpoint_start", effectdata1, true, true )
@@ -24,6 +64,7 @@ function ENT:Initialize()
 	self.Entity:SetMoveType( MOVETYPE_VPHYSICS )
 	self.Entity:SetSolid( SOLID_VPHYSICS )
 	self:SetUseType( SIMPLE_USE )
+	self.Entity.linkedPlayers = {}
 
 	local phys = self.Entity:GetPhysicsObject()
 	if (phys:IsValid()) then
@@ -33,34 +74,34 @@ function ENT:Initialize()
 	end	
 end
 
-
-
-
-
 function ENT:OnRemove()
 	local effectdata1 = EffectData()
-		effectdata1:SetOrigin( self.Entity:GetPos() )
+	effectdata1:SetOrigin( self.Entity:GetPos() )
 	util.Effect( "spawnpoint_start", effectdata1, true, true )
-//	activator.SpawnPoint = nil
-//	hook.Remove( "PlayerSpawn", "SpawnerHook" )
+	
+	unlinkAllPlayersFromSpawnPoint(self.Entity)
 end
 
-function ENT:Use(activator, caller)
-if activator.SpawnPoint and activator.SpawnPoint == self.Entity then
-activator.SpawnPoint = nil
-activator:PrintMessage(4, "Spawn point reset.")
-else
-activator.SpawnPoint = self.Entity
-activator:PrintMessage(4, "Spawn point set.")
-end
+function ENT:Use( player, caller )
+	if player.SpawnPoint and player.SpawnPoint == self.Entity then
+		unlinkPlayerFromSpawnPoint( player, self.Entity )
+		player:PrintMessage(4, "Spawn point reset.")
+	else
+		linkPlayerToSpawnPoint( player, self.Entity )
+		player:PrintMessage(4, "Spawn point set.")
+	end
 end 
 
-local function SpawnerHook(pl)
-if pl.SpawnPoint and pl.SpawnPoint:IsValid() then pl:SetPos(pl.SpawnPoint:GetPos() + Vector(0,0,16)) end
+local function SpawnPointHook(player)
+	local spawnPoint = player.SpawnPoint
+	if spawnPoint and spawnPoint:IsValid() then
+		local spawnPos = spawnPoint:GetPos() + Vector(0,0,16)
+		player:SetPos(spawnPos)
+	end
 end
-hook.Add("PlayerSpawn", "SpawnerHook", SpawnerHook) 
+hook.Add("PlayerSpawn", "SpawnerHook", SpawnPointHook) 
 
-// Stubs for here on.
+-- Stubs from here on
 
 function ENT:Think() end
 
