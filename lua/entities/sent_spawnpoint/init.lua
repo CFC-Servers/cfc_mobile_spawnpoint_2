@@ -4,8 +4,8 @@ include( 'shared.lua' )
 
 -- Chat command config
 spawnPointCommands = {
-	["clearSpawnPoint"] = { "!clearspawn", "!clear spawn" },
-	["clearThisSpawnPoint"] = { "!clear this spawn point", "!clear this spawn point" }
+	["unlinkSpawnPoint"] = { "!unlinkspawn", "!unlinkspawnpoint" },
+	["unlinkThisSpawnPoint"] = { "!unlinkthis" }
 }
 
 -- Helper Functions
@@ -38,24 +38,24 @@ function unlinkAllPlayersFromSpawnPoint( spawnPoint, excludePlayers )
 end
 
 -- Chat commands
-function clearSpawnPointCommand( player, text, _, _ )
-	local text = string.lower( text )
-	local clearSpawnCommands = spawnPointCommands.clearSpawnPoint
+function unlinkSpawnPointCommand( player, text, _, _ )
+	local text = string.lower( text ):gsub("%s+", "")
+	local unlinkSpawnCommands = spawnPointCommands.unlinkSpawnPoint
 	
-	if ( clearSpawnCommands[text] ) then
+	if ( unlinkSpawnCommands[text] ) then
 		local linkedSpawnPoint = player.linkedSpawnPoint	
 		unlinkPlayerFromSpawnPoint( player, linkedSpawnPoint )
-		player:PrintMessage("Spawn point cleared.")
+		player:PrintMessage("Spawn point unlinked.")
 	end
 end
-hook.Remove( "PlayerSay", "ClearSpawnPointCommand" )
-hook.Add( "PlayerSay", "ClearSpawnPointCommand", clearSpawnPointCommand )
+hook.Remove( "PlayerSay", "UnlinkSpawnPointCommand" )
+hook.Add( "PlayerSay", "UnlinkSpawnPointCommand", unlinkSpawnPointCommand )
 
-function clearThisSpawnPointCommand( player, text, _, _ )
-	local text = string.lower( text )
-	local clearThisSpawnCommands = spawnPointCommands.clearThisSpawnPoint
+function unlinkThisSpawnPointCommand( player, text, _, _ )
+	local text = string.lower( text ):gsub("%s+", "")
+	local unlinkThisSpawnCommands = spawnPointCommands.unlinkThisSpawnPoint
 	
-	if ( clearThisSpawnCommands[text] ) then
+	if ( unlinkThisSpawnCommands[text] ) then
 		local targetedEntity = player:GetEyeTraceNoCursor().Entity
 		
 		if ( targetedEntity and targetedEntity:IsValid() ) then
@@ -71,7 +71,7 @@ function clearThisSpawnPointCommand( player, text, _, _ )
 					local excludedPlayers = createPlayerList( { spawnPointOwner } )
 					unlinkAllPlayersFromSpawnPoint(spawnPoint, excludedPlayers)
 				else
-					player:PrintMessage("That's not yours! You can't clear this Spawn Point.")
+					player:PrintMessage("That's not yours! You can't unlink others from this Spawn Point.")
 				end
 			else
 				player:PrintMessage("You must be looking at a spawn point to use this command.")
@@ -80,8 +80,8 @@ function clearThisSpawnPointCommand( player, text, _, _ )
 	end
 end
 
-hook.Remove( "PlayerSay", "ClearThisSpawnPointCommand" )
-hook.Add( "PlayerSay", "ClearThisSpawnPointCommand", clearThisSpawnPointCommand )
+hook.Remove( "PlayerSay", "UnlinkThisSpawnPointCommand" )
+hook.Add( "PlayerSay", "UnlinkThisSpawnPointCommand", unlinkThisSpawnPointCommand )
 
 -- Entity Methods
 function ENT:SpawnFunction( ply, tr )
@@ -126,10 +126,10 @@ end
 function ENT:Use( player, caller )
 	if ( player.LinkedSpawnPoint and player.LinkedSpawnPoint == self.Entity ) then
 		unlinkPlayerFromSpawnPoint( player, self.Entity )
-		player:PrintMessage(4, "Spawn point cleared.")
+		player:PrintMessage(4, "Spawn point unlinked.")
 	else
 		linkPlayerToSpawnPoint( player, self.Entity )
-		player:PrintMessage(4, "Spawn point set. Say !clearspawn to unset.")
+		player:PrintMessage(4, "Spawn point set. Say !unlinkspawn to unlink.")
 	end
 end 
 
