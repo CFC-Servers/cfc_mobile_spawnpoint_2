@@ -2,10 +2,13 @@ AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 include( 'shared.lua' )
 
+-- Chat command config
 spawnPointCommands = {
-	["clearSpawnPoint"] = { "!clearspawn" }
+	["clearSpawnPoint"] = { "!clearspawn", "!clear spawn" },
+	["clearThisSpawnPoint"] = { "!clear this spawn point", "!clear this spawn point" }
 }
 
+-- Helper Functions
 function createPlayerList( players )
 	local playerList = {}
 	table.forEach( players, function( _, player )
@@ -25,14 +28,17 @@ function unlinkPlayerFromSpawnPoint( player, spawnPoint )
 	spawnPoint.linkedPlayers[player] = nil
 end
 
-function unlinkAllPlayersFromSpawnPoint( spawnPoint )
+function unlinkAllPlayersFromSpawnPoint( spawnPoint, excludePlayers )
 	local linkedPlayers = spawnPoint.linkedPlayers
 	table.forEach( linkedPlayers, function( _, player )
-		unlinkPlayerFromSpawnPoint( spawnPoint, player )
+		if ( not excludePlayers[player] ) then
+			unlinkPlayerFromSpawnPoint( spawnPoint, player )
+		end
 	end)
 end
 
-function clearSpawnCommand( player, text, _, _ )
+-- Chat commands
+function clearSpawnPointCommand( player, text, _, _ )
 	local text = string.lower( text )
 	local clearSpawnCommands = spawnPointCommands.clearSpawnPoint
 	
@@ -42,22 +48,56 @@ function clearSpawnCommand( player, text, _, _ )
 		player:PrintMessage("Spawn point cleared.")
 	end
 end
-hook.Remove( "PlayerSay", "clearSpawnPointCommand", clearSpawnPointCommand )
+hook.Remove( "PlayerSay", "ClearSpawnPointCommand" )
+hook.Add( "PlayerSay", "ClearSpawnPointCommand", clearSpawnPointCommand )
 
+function clearThisSpawnPointCommand( player, text, _, _ )
+	local text = string.lower( text )
+	local clearThisSpawnCommands = spawnPointCommands.clearThisSpawnPoint
+	
+	if ( clearThisSpawnCommands[text] ) then
+		local targetedEntity = player:GetEyeTraceNoCursor().Entity
+		
+		if ( targetedEntity and targetedEntity:IsValid() ) then
+			local isSpawnPoint = targetedEntity:GetClass() == "sent_spawnpoint"
+			
+			if ( isSpawnPoint ) then
+				local spawnPoint = targetedEntity
+				local spawnPointOwner = spawnPoint:CPPIGetowner()
+				local playerOwnsSpawnPoint = spawnPointOwner == player
+				local playerIsAdmin = player:IsAdmin()
+				
+				if ( playerOwnsSpawnPoint or playerIsAdmin ) then
+					local excludedPlayers = createPlayerList( { spawnPointOwner } )
+					unlinkAllPlayersFromSpawnPoint(spawnPoint, excludedPlayers)
+				else
+					player:PrintMessage("That's not yours! You can't clear this Spawn Point.")
+				end
+			else
+				player:PrintMessage("You must be looking at a spawn point to use this command.")
+			end
+		end
+	end
+end
+
+hook.Remove( "PlayerSay", "ClearThisSpawnPointCommand" )
+hook.Add( "PlayerSay", "ClearThisSpawnPointCommand", clearThisSpawnPointCommand )
+
+-- Entity Methods
 function ENT:SpawnFunction( ply, tr )
 	if ( !tr.Hit ) then return end
-		local SpawnPos = tr.HitPos
-		local ent = ents.Create( "sent_spawnpoint" )
-			ent:SetPos( SpawnPos )
-			ent:Spawn()
-			ent:Activate()
+	local SpawnPos = tr.HitPos
+	local ent = ents.Create( "sent_spawnpoint" )
+	ent:SetPos( SpawnPos )
+	ent:Spawn()
+	ent:Activate()
+	
 	return ent
 end
 
 function ENT:Initialize()
-
 	local effectdata1 = EffectData()
-		effectdata1:SetOrigin( self.Entity:GetPos() )
+	effectdata1:SetOrigin( self.Entity:GetPos() )
 	util.Effect( "spawnpoint_start", effectdata1, true, true )
 	
 	self.Entity:SetModel("models/props_combine/combine_mine01.mdl")
@@ -68,7 +108,7 @@ function ENT:Initialize()
 	self.Entity.linkedPlayers = {}
 
 	local phys = self.Entity:GetPhysicsObject()
-	if (phys:IsValid()) then
+	if ( phys:IsValid() ) then
 		phys:Wake()
 		phys:EnableDrag(true)
 		phys:EnableMotion(false)
@@ -84,7 +124,7 @@ function ENT:OnRemove()
 end
 
 function ENT:Use( player, caller )
-	if player.LinkedSpawnPoint and player.LinkedSpawnPoint == self.Entity then
+	if ( player.LinkedSpawnPoint and player.LinkedSpawnPoint == self.Entity ) then
 		unlinkPlayerFromSpawnPoint( player, self.Entity )
 		player:PrintMessage(4, "Spawn point cleared.")
 	else
@@ -95,12 +135,13 @@ end
 
 local function SpawnPointHook(player)
 	local spawnPoint = player.LinkedSpawnPoint
-	if spawnPoint and spawnPoint:IsValid() then
+	if ( spawnPoint and spawnPoint:IsValid() ) then
 		local spawnPos = spawnPoint:GetPos() + Vector(0,0,16)
 		player:SetPos(spawnPos)
 	end
 end
-hook.Add("PlayerSpawn", "SpawnerHook", SpawnPointHook) 
+hook.Remove("PlayerSpawn", "SpawnPointHook")
+hook.Add("PlayerSpawn", "SpawnPointHook", SpawnPointHook) 
 
 -- Stubs from here on
 
