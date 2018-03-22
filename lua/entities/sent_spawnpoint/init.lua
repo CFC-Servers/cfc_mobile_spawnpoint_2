@@ -4,16 +4,16 @@ include( 'shared.lua' )
 
 -- Chat command config
 spawnPointCommands = {
-	["unlinkSpawnPoint"] = { "!unlinkspawn", "!unlinkspawnpoint" },
-	["unlinkThisSpawnPoint"] = { "!unlinkthis" }
+	["unlinkSpawnPoint"] = { ["!unlinkspawn"] = true, ["!unlinkspawnpoint"] = true },
+	["unlinkThisSpawnPoint"] = { ["!unlinkthis"] = true }
 }
 
 -- Helper Functions
 function createPlayerList( players )
 	local playerList = {}
-	table.forEach( players, function( _, player )
+	for player, _ in pairs( players) do
 		playerList[player] = true
-	end)
+	end
 	
 	return playerList
 end
@@ -30,11 +30,12 @@ end
 
 function unlinkAllPlayersFromSpawnPoint( spawnPoint, excludePlayers )
 	local linkedPlayers = spawnPoint.linkedPlayers
-	table.forEach( linkedPlayers, function( _, player )
+	
+	for player, _ in pairs( linkedPlayers ) do
 		if ( not excludePlayers[player] ) then
-			unlinkPlayerFromSpawnPoint( spawnPoint, player )
+			unlinkPlayerFromSpawnPoint( player, spawnPoint )
 		end
-	end)
+	end
 end
 
 -- Chat commands
@@ -43,7 +44,7 @@ function unlinkSpawnPointCommand( player, text, _, _ )
 	local unlinkSpawnCommands = spawnPointCommands.unlinkSpawnPoint
 	
 	if ( unlinkSpawnCommands[text] ) then
-		local linkedSpawnPoint = player.linkedSpawnPoint	
+		local linkedSpawnPoint = player.LinkedSpawnPoint	
 		unlinkPlayerFromSpawnPoint( player, linkedSpawnPoint )
 		player:PrintMessage(4, "Spawn point unlinked.")
 	end
@@ -63,13 +64,14 @@ function unlinkThisSpawnPointCommand( player, text, _, _ )
 			
 			if ( isSpawnPoint ) then
 				local spawnPoint = targetedEntity
-				local spawnPointOwner = spawnPoint:CPPIGetowner()
+				local spawnPointOwner = spawnPoint:CPPIGetOwner()
 				local playerOwnsSpawnPoint = spawnPointOwner == player
 				local playerIsAdmin = player:IsAdmin()
 				
 				if ( playerOwnsSpawnPoint or playerIsAdmin ) then
 					local excludedPlayers = createPlayerList( { spawnPointOwner } )
 					unlinkAllPlayersFromSpawnPoint(spawnPoint, excludedPlayers)
+					player:PrintMessage(4, "All players except the owner have been unlinked from this spawn point")
 				else
 					player:PrintMessage(4, "That's not yours! You can't unlink others from this Spawn Point.")
 				end
@@ -120,7 +122,7 @@ function ENT:OnRemove()
 	effectdata1:SetOrigin( self.Entity:GetPos() )
 	util.Effect( "spawnpoint_start", effectdata1, true, true )
 	
-	unlinkAllPlayersFromSpawnPoint(self.Entity)
+	unlinkAllPlayersFromSpawnPoint(self.Entity, {})
 end
 
 function ENT:Use( player, caller )
