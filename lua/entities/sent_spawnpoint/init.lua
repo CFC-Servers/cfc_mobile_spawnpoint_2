@@ -83,7 +83,7 @@ function ENT:OnRemove()
 end
 
 function ENT:Use( player, caller )
-	if player.SpawnPoint and player.SpawnPoint == self.Entity then
+	if player.LinkedSpawnPoint and player.LinkedSpawnPoint == self.Entity then
 		unlinkPlayerFromSpawnPoint( player, self.Entity )
 		player:PrintMessage(4, "Spawn point reset.")
 	else
@@ -93,7 +93,7 @@ function ENT:Use( player, caller )
 end 
 
 local function SpawnPointHook(player)
-	local spawnPoint = player.SpawnPoint
+	local spawnPoint = player.LinkedSpawnPoint
 	if spawnPoint and spawnPoint:IsValid() then
 		local spawnPos = spawnPoint:GetPos() + Vector(0,0,16)
 		player:SetPos(spawnPos)
