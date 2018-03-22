@@ -39,6 +39,7 @@ function clearSpawnCommand( player, text, _, _ )
 	if ( clearSpawnCommands[text] ) then
 		local linkedSpawnPoint = player.linkedSpawnPoint	
 		unlinkPlayerFromSpawnPoint( player, linkedSpawnPoint )
+		player:PrintMessage("Spawn point cleared.")
 	end
 end
 hook.Remove( "PlayerSay", "clearSpawnPointCommand", clearSpawnPointCommand )
@@ -85,7 +86,7 @@ end
 function ENT:Use( player, caller )
 	if player.LinkedSpawnPoint and player.LinkedSpawnPoint == self.Entity then
 		unlinkPlayerFromSpawnPoint( player, self.Entity )
-		player:PrintMessage(4, "Spawn point reset.")
+		player:PrintMessage(4, "Spawn point cleared.")
 	else
 		linkPlayerToSpawnPoint( player, self.Entity )
 		player:PrintMessage(4, "Spawn point set.")
