@@ -45,7 +45,7 @@ function unlinkSpawnPointCommand( player, text, _, _ )
 	if ( unlinkSpawnCommands[text] ) then
 		local linkedSpawnPoint = player.linkedSpawnPoint	
 		unlinkPlayerFromSpawnPoint( player, linkedSpawnPoint )
-		player:PrintMessage("Spawn point unlinked.")
+		player:PrintMessage(4, "Spawn point unlinked.")
 	end
 end
 hook.Remove( "PlayerSay", "UnlinkSpawnPointCommand" )
@@ -71,10 +71,10 @@ function unlinkThisSpawnPointCommand( player, text, _, _ )
 					local excludedPlayers = createPlayerList( { spawnPointOwner } )
 					unlinkAllPlayersFromSpawnPoint(spawnPoint, excludedPlayers)
 				else
-					player:PrintMessage("That's not yours! You can't unlink others from this Spawn Point.")
+					player:PrintMessage(4, "That's not yours! You can't unlink others from this Spawn Point.")
 				end
 			else
-				player:PrintMessage("You must be looking at a spawn point to use this command.")
+				player:PrintMessage(4, "You must be looking at a spawn point to use this command.")
 			end
 		end
 	end
