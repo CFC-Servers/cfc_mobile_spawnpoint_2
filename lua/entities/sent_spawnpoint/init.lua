@@ -20,23 +20,24 @@ end
 
 function linkPlayerToSpawnPoint( player, spawnPoint )
     player.LinkedSpawnPoint = spawnPoint
-    spawnPoint.linkedPlayers[player] = "Linked"
+    spawnPoint.LinkedPlayers[player] = "Linked"
 end
 
 function unlinkPlayerFromSpawnPoint( player, spawnPoint )
     player.LinkedSpawnPoint = nil
-    spawnPoint.linkedPlayers[player] = nil
+    spawnPoint.LinkedPlayers[player] = nil
 end
 
-function unlinkAllPlayersFromSpawnPoint( spawnPoint, excludePlayers )
-    local linkedPlayers = spawnPoint.linkedPlayers
+function unlinkAllPlayersFromSpawnPoint( spawnPoint, excludedPlayers )
+    local linkedPlayers = spawnPoint.LinkedPlayers
     local spawnPointOwner = spawnPoint:CCPIGetOwner()
 
     for player, _ in pairs( linkedPlayers ) do
+		local playerIsExcluded = excludedPlayers[player]
         local playerOwnsSpawnPoint = spawnPointOwner == player
-        if ( not excludePlayers[player] and not playerOwnsSpawnPoint ) then
+        if ( not playerIsExcluded and not playerOwnsSpawnPoint ) then
             unlinkPlayerFromSpawnPoint( player, spawnPoint )
-            player:PrintMessage(4, "You've been unlinked from a Spawn point!")
+            player:PrintMessage(4, "You've been unlinked from a Spawn Point!")
         end
     end
 end
@@ -49,7 +50,7 @@ function unlinkSpawnPointCommand( player, text, _, _ )
     if ( unlinkSpawnCommands[text] ) then
         local linkedSpawnPoint = player.LinkedSpawnPoint
         unlinkPlayerFromSpawnPoint( player, linkedSpawnPoint )
-        player:PrintMessage(4, "Spawn point unlinked.")
+        player:PrintMessage(4, "Spawn Point unlinked")
     end
 end
 hook.Remove( "PlayerSay", "UnlinkSpawnPointCommand" )
@@ -74,12 +75,12 @@ function unlinkThisSpawnPointCommand( player, text, _, _ )
                 if ( playerOwnsSpawnPoint or playerIsAdmin ) then
                     local excludedPlayers = createPlayerList( { spawnPointOwner } )
                     unlinkAllPlayersFromSpawnPoint(spawnPoint, excludedPlayers)
-                    player:PrintMessage(4, "All players except the owner have been unlinked from this spawn point")
+                    player:PrintMessage(4, "All players except the owner have been unlinked from this Spawn Point")
                 else
-                    player:PrintMessage(4, "That's not yours! You can't unlink others from this Spawn Point.")
+                    player:PrintMessage(4, "That's not yours! You can't unlink others from this Spawn Point")
                 end
             else
-                player:PrintMessage(4, "You must be looking at a spawn point to use this command.")
+                player:PrintMessage(4, "You must be looking at a Spawn Point to use this command")
             end
         end
     end
@@ -110,7 +111,7 @@ function ENT:Initialize()
     self.Entity:SetMoveType( MOVETYPE_VPHYSICS )
     self.Entity:SetSolid( SOLID_VPHYSICS )
     self:SetUseType( SIMPLE_USE )
-    self.Entity.linkedPlayers = {}
+    self.Entity.LinkedPlayers = {}
 
     local phys = self.Entity:GetPhysicsObject()
     if ( phys:IsValid() ) then
@@ -131,10 +132,10 @@ end
 function ENT:Use( player, caller )
     if ( player.LinkedSpawnPoint and player.LinkedSpawnPoint == self.Entity ) then
         unlinkPlayerFromSpawnPoint( player, self.Entity )
-        player:PrintMessage(4, "Spawn point unlinked.")
+        player:PrintMessage(4, "Spawn Point unlinked")
     else
         linkPlayerToSpawnPoint( player, self.Entity )
-        player:PrintMessage(4, "Spawn point set. Say !unlinkspawn to unlink.")
+        player:PrintMessage(4, "Spawn Point set. Say !unlinkspawn to unlink")
     end
 end
 
