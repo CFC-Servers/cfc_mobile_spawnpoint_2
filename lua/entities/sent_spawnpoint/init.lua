@@ -29,15 +29,18 @@ function unlinkPlayerFromSpawnPoint( player, spawnPoint )
 end
 
 function unlinkAllPlayersFromSpawnPoint( spawnPoint, excludedPlayers )
-    local linkedPlayers = spawnPoint.LinkedPlayers
-    local spawnPointOwner = spawnPoint:CCPIGetOwner()
+    if ( IsValid(spawnPoint) ) then
+        local linkedPlayers = spawnPoint.LinkedPlayers
+        local spawnPointOwner = spawnPoint:CCPIGetOwner()
 
-    for player, _ in pairs( linkedPlayers ) do
-		local playerIsExcluded = excludedPlayers[player]
-        local playerOwnsSpawnPoint = spawnPointOwner == player
-        if ( not playerIsExcluded and not playerOwnsSpawnPoint ) then
-            unlinkPlayerFromSpawnPoint( player, spawnPoint )
-            player:PrintMessage(4, "You've been unlinked from a Spawn Point!")
+        for player, _ in pairs( linkedPlayers ) do
+            local playerIsExcluded = excludedPlayers[player]
+            local playerOwnsSpawnPoint = spawnPointOwner == player
+			
+            if ( not playerIsExcluded and not playerOwnsSpawnPoint ) then
+                unlinkPlayerFromSpawnPoint( player, spawnPoint )
+                player:PrintMessage(4, "You've been unlinked from a Spawn Point!")
+            end
         end
     end
 end
