@@ -31,7 +31,7 @@ end
 function unlinkAllPlayersFromSpawnPoint( spawnPoint, excludedPlayers )
     if ( IsValid(spawnPoint) ) then
         local linkedPlayers = spawnPoint.LinkedPlayers
-        local spawnPointOwner = spawnPoint:CCPIGetOwner()
+        local spawnPointOwner = spawnPoint:CPPIGetOwner()
 
         for player, _ in pairs( linkedPlayers ) do
             local playerIsExcluded = excludedPlayers[player]
