@@ -92,6 +92,17 @@ end
 hook.Remove( "PlayerSay", "UnlinkThisSpawnPointCommand" )
 hook.Add( "PlayerSay", "UnlinkThisSpawnPointCommand", unlinkThisSpawnPointCommand )
 
+
+local function unlinkPlayerOnDisconnect( player )
+    local linkedSpawnPoint = player.linkedSpawnPoint
+
+    if( linkedSpawnPoint ) then
+        unlinkPlayerFromSpawnPoint( player, linkedSpawnPoint )
+    end
+end
+hook.Remove( "PlayerDisconnected", "UnlinkPlayerOnDisconnect" )
+hook.Add( "PlayerDisconnected", "UnlinkPlayerOnDisconnect", unlinkPlayerOnDisconnect )
+
 -- Entity Methods
 function ENT:SpawnFunction( ply, tr )
     if ( !tr.Hit ) then return end
@@ -142,7 +153,7 @@ function ENT:Use( player, caller )
     end
 end
 
-local function SpawnPointHook(player)
+local function SpawnPointHook( player )
     local spawnPoint = player.LinkedSpawnPoint
     if ( spawnPoint and spawnPoint:IsValid() ) then
         local spawnPos = spawnPoint:GetPos() + Vector(0,0,16)
