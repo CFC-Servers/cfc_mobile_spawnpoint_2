@@ -4,8 +4,13 @@ include( 'shared.lua' )
 
 -- Chat command config
 spawnPointCommands = {
-    ["unlinkSpawnPoint"] = { ["!unlinkspawn"] = true, ["!unlinkspawnpoint"] = true },
-    ["unlinkThisSpawnPoint"] = { ["!unlinkthis"] = true }
+    ["unlinkSpawnPoint"] = { 
+        ["!unlinkspawn"] = true, 
+        ["!unlinkspawnpoint"] = true 
+    },
+    ["unlinkThisSpawnPoint"] = { 
+        ["!unlinkthis"] = true 
+    }
 }
 
 -- Helper Functions
