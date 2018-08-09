@@ -40,16 +40,16 @@ function unlinkAllPlayersFromSpawnPoint( spawnPoint, excludedPlayers )
     local spawnPointOwner = spawnPoint:CPPIGetOwner()
     
     for player, _ in pairs( linkedPlayers ) do
-        if excludedPlayers[player] then next end
-        if spawnPointOwner == player then next end
-
-        unlinkPlayerFromSpawnPoint( player, spawnPoint)
-        player:PrintMessage(4, "You've been unlinked from a Spawn Point!")
+        if not ( excludedPlayers[player] or spawnPointOwner == player ) then
+           unlinkPlayerFromSpawnPoint( player, spawnPoint )
+           player:PrintMessage( 4, "You've been unlinked from a Spawn Point!" )
+        end
     end
 end
 
 -- Chat commands
 function unlinkSpawnPointCommand( player, text, _, _ )
+    -- Removes whitepace from text
     local text = string.lower( text ):gsub( "%s+", "" )
     local unlinkSpawnCommands = spawnPointCommands.unlinkSpawnPoint
 
@@ -69,26 +69,22 @@ function unlinkThisSpawnPointCommand( player, text, _, _ )
     if not unlinkThisSpawnCommands[text] then return end
 
     local targetedEntity = player:GetEyeTraceNoCursor().Entity
-    if not targetedEntity or not targedtedEntity:IsValid() then return end
+    if not ( targetedEntity and targedtedEntity:IsValid() ) then return end
 
     local isSpawnPoint = targetedEntity:GetClass() == "sent_spawnpoint"
-    if not isSpawnPoint then 
-        player:PrintMessage( 4, "You must be looking at a Spawn Point to use this command" )
-        return
-    end
+    if not isSpawnPoint then return player:PrintMessage( 4, "You must be looking at a Spawn Point to use this command" ) end
     
     local spawnPoint = targetedEntity
     local spawnPointOwner = spawnPoint:CPPIGetOwner()
     local playerOwnsSpawnPoint = spawnPointOwner == player
     local playerIsAdmin = player:IsAdmin()
 
-    if playerOwnsSpawnPoint or playerIsAdmin then
-        local excludedPlayers = createPlayerList( { spawnPointOwner } )
-        unlinkAllPlayersFromSpawnPoint(spawnPoint, excludedPlayers)
-        player:PrintMessage( 4, "All players except the owner have been unlinked from this Spawn Point" )
-    else
-        player:PrintMessage( 4, "That's not yours! You can't unlink others from this Spawn Point" )
-    end
+    if not ( playerOwnsSpawnpoint or playerIsAdmin ) then return player:PrintMessage( 4, "That's not yours! You can't unlink others from this Spawn Point" ) end
+
+    local excludedPlayers = createPlayerList( { spawnPointOwner } )
+    unlinkAllPlayersFromSpawnPoint(spawnPoint, excludedPlayers)
+    player:PrintMessage( 4, "All players except the owner have been unlinked from this Spawn Point" )
+
 end
 
 hook.Remove( "PlayerSay", "UnlinkThisSpawnPointCommand" )
@@ -145,22 +141,21 @@ function ENT:OnRemove()
 end
 
 function ENT:Use( player, caller )
-    local msg = ""
-    if player.LinkedSpawnPoint and player.LinkedSpawnPoint == self.Entity then
+    if player.LinkedSpawnPoint == self.Entity then
         unlinkPlayerFromSpawnPoint( player, self.Entity )
         player:PrintMessage( 4, "Spawn Point unlinked" )
     else
         linkPlayerToSpawnPoint( player, self.Entity )
         player:PrintMessage( 4, "Spawn Point set. Say !unlinkspawn to unlink" )
     end
-
 end
 
+local heightOfSpawnPointPlusOne = 16
 local function SpawnPointHook( player )
     local spawnPoint = player.LinkedSpawnPoint
     if not spawnPoint or not spawnPoint:IsValid() then return end
     
-    local spawnPos = spawnPoint:GetPos() + Vector(0,0,16)
+    local spawnPos = spawnPoint:GetPos() + Vector( 0, 0, heightOfSpawnPointPlusOne )
     player:SetPos(spawnPos)
 end
 hook.Remove("PlayerSpawn", "SpawnPointHook")
