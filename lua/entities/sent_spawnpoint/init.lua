@@ -40,7 +40,10 @@ function unlinkAllPlayersFromSpawnPoint( spawnPoint, excludedPlayers )
     local spawnPointOwner = spawnPoint:CPPIGetOwner()
     
     for player, _ in pairs( linkedPlayers ) do
-        if not ( excludedPlayers[player] or spawnPointOwner == player ) then
+        local playerIsNotExcluded = excludedPlayers[player] == nil
+        local playerIsNotSpawnPointOwner = spawnPointOwner ~= player
+
+        if playerIsNotExcluded and playerIsNotSpawnPointOwner then
            unlinkPlayerFromSpawnPoint( player, spawnPoint )
            player:PrintMessage( 4, "You've been unlinked from a Spawn Point!" )
         end
@@ -141,7 +144,9 @@ function ENT:OnRemove()
 end
 
 function ENT:Use( player, caller )
-    if player.LinkedSpawnPoint == self.Entity then
+    local playerLinkedToSpawnPoint = player.LinkedSpawnPoint == self.Entity
+
+    if playerLinkedToSpawnPoint then
         unlinkPlayerFromSpawnPoint( player, self.Entity )
         player:PrintMessage( 4, "Spawn Point unlinked" )
     else
