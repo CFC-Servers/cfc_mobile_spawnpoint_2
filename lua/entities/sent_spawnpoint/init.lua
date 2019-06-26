@@ -72,7 +72,7 @@ function unlinkThisSpawnPointCommand( player, text, _, _ )
     if not unlinkThisSpawnCommands[text] then return end
 
     local targetedEntity = player:GetEyeTraceNoCursor().Entity
-    if not ( targetedEntity and targedtedEntity:IsValid() ) then return end
+    if not ( targetedEntity and targetedEntity:IsValid() ) then return end
 
     local isSpawnPoint = targetedEntity:GetClass() == "sent_spawnpoint"
     if not isSpawnPoint then return player:PrintMessage( 4, "You must be looking at a Spawn Point to use this command" ) end
