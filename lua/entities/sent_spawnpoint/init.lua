@@ -87,9 +87,9 @@ function unlinkThisSpawnPointCommand( ply, text, _, _ )
     if not ( playerOwnsSpawnpoint or playerIsAdmin ) then return ply:PrintMessage( 4, "That's not yours! You can't unlink others from this Spawn Point" ) end
 
     local excludedPlayers = createPlayerList( { spawnPointOwner } )
-    unlinkAllPlayersFromSpawnPoint(spawnPoint, excludedPlayers)
-    ply:PrintMessage( 4, "All players except the owner have been unlinked from this Spawn Point" )
 
+    unlinkAllPlayersFromSpawnPoint( spawnPoint, excludedPlayers )
+    ply:PrintMessage( 4, "All players except the owner have been unlinked from this Spawn Point" )
 end
 
 hook.Remove( "PlayerSay", "UnlinkThisSpawnPointCommand" )
@@ -122,7 +122,7 @@ function ENT:Initialize()
     effectdata1:SetOrigin( self.Entity:GetPos() )
     util.Effect( "spawnpoint_start", effectdata1, true, true )
 
-    self.Entity:SetModel("models/props_combine/combine_mine01.mdl")
+    self.Entity:SetModel( "models/props_combine/combine_mine01.mdl" )
     self.Entity:PhysicsInit( SOLID_VPHYSICS )
     self.Entity:SetMoveType( MOVETYPE_VPHYSICS )
     self.Entity:SetSolid( SOLID_VPHYSICS )
@@ -163,10 +163,10 @@ local function SpawnPointHook( ply )
     if not spawnPoint or not spawnPoint:IsValid() then return end
 
     local spawnPos = spawnPoint:GetPos() + Vector( 0, 0, heightOfSpawnPointPlusOne )
-    ply:SetPos(spawnPos)
+    ply:SetPos( spawnPos )
 end
-hook.Remove("PlayerSpawn", "SpawnPointHook")
-hook.Add("PlayerSpawn", "SpawnPointHook", SpawnPointHook)
+hook.Remove( "PlayerSpawn", "SpawnPointHook" )
+hook.Add( "PlayerSpawn", "SpawnPointHook", SpawnPointHook )
 
 -- Stubs from here on
 
