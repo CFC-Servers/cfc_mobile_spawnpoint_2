@@ -24,7 +24,7 @@ function createPlayerList( players )
 end
 
 function linkPlayerToSpawnPoint( ply, spawnPoint )
-    if not IsValid(ply) then return end
+    if not IsValid( ply ) then return end
     if not IsValid( spawnPoint ) then return end
 
     ply.LinkedSpawnPoint = spawnPoint
@@ -32,7 +32,7 @@ function linkPlayerToSpawnPoint( ply, spawnPoint )
 end
 
 function unlinkPlayerFromSpawnPoint( ply, spawnPoint )
-    if not IsValid(ply) then return end
+    if not IsValid( ply ) then return end
     if not IsValid( spawnPoint ) then return end
 
     ply.LinkedSpawnPoint = nil
