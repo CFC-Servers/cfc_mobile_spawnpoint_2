@@ -103,7 +103,7 @@ hook.Add( "PlayerSay", "UnlinkThisSpawnPointCommand", unlinkThisSpawnPointComman
 
 
 local function unlinkPlayerOnDisconnect( ply )
-    local linkedSpawnPoint = ply.linkedSpawnPoint
+    local linkedSpawnPoint = ply.LinkedSpawnPoint
     if not linkedSpawnPoint then return end
 
     unlinkPlayerFromSpawnPoint( ply, linkedSpawnPoint )
