@@ -24,12 +24,16 @@ function createPlayerList( players )
 end
 
 function linkPlayerToSpawnPoint( ply, spawnPoint )
+    if not IsValid(ply) then return end
+    if not IsValid( spawnPoint ) then return end
+
     ply.LinkedSpawnPoint = spawnPoint
     spawnPoint.LinkedPlayers[ply] = "Linked"
 end
 
 function unlinkPlayerFromSpawnPoint( ply, spawnPoint )
     if not IsValid(ply) then return end
+    if not IsValid( spawnPoint ) then return end
 
     ply.LinkedSpawnPoint = nil
     spawnPoint.LinkedPlayers[ply] = nil
@@ -42,12 +46,14 @@ function unlinkAllPlayersFromSpawnPoint( spawnPoint, excludedPlayers )
     local spawnPointOwner = spawnPoint:CPPIGetOwner()
 
     for ply, _ in pairs( linkedPlayers ) do
-        local playerIsNotExcluded = excludedPlayers[ply] == nil
-        local playerIsNotSpawnPointOwner = spawnPointOwner ~= ply
+        if IsValid( ply ) then
+            local playerIsNotExcluded = excludedPlayers[ply] == nil
+            local playerIsNotSpawnPointOwner = spawnPointOwner ~= ply
 
-        if playerIsNotExcluded and playerIsNotSpawnPointOwner then
-           unlinkPlayerFromSpawnPoint( ply, spawnPoint )
-           ply:PrintMessage( 4, "You've been unlinked from a Spawn Point!" )
+            if playerIsNotExcluded and playerIsNotSpawnPointOwner then
+               unlinkPlayerFromSpawnPoint( ply, spawnPoint )
+               ply:PrintMessage( 4, "You've been unlinked from a Spawn Point!" )
+            end
         end
     end
 end
