@@ -34,6 +34,7 @@ local function isFriendly( ply, otherPly )
     if isInSameFaction( ply, otherPly ) then return true  end
 
     local friends = ply:CPPIGetFriends()
+    if friends == CPPI.CPPI_DEFER then return false end
     return table.HasValue( friends, otherPly )
 end
 
