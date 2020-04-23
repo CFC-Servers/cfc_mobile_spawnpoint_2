@@ -45,6 +45,8 @@ function linkPlayerToSpawnPoint( ply, spawnPoint )
 
     ply.LinkedSpawnPoint = spawnPoint
     spawnPoint.LinkedPlayers[ply] = "Linked"
+
+    return true
 end
 
 function unlinkPlayerFromSpawnPoint( ply, spawnPoint )
@@ -174,8 +176,13 @@ function ENT:Use( ply, caller )
         unlinkPlayerFromSpawnPoint( ply, self.Entity )
         ply:PrintMessage( 4, "Spawn Point unlinked" )
     else
-        linkPlayerToSpawnPoint( ply, self.Entity )
-        ply:PrintMessage( 4, "Spawn Point set. Say !unlinkspawn to unlink" )
+        local success = linkPlayerToSpawnPoint( ply, self.Entity )
+
+        if success then
+            ply:PrintMessage( 4, "Spawn Point set. Say !unlinkspawn to unlink" )
+        else
+            ply:PrintMessage( 4, "Unable to set spawnpoint, you are not in the same faction as the owner.")
+        end
     end
 end
 
