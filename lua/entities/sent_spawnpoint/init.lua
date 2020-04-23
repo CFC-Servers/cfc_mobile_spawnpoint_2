@@ -181,7 +181,7 @@ function ENT:Use( ply, caller )
         if success then
             ply:PrintMessage( 4, "Spawn Point set. Say !unlinkspawn to unlink" )
         else
-            ply:PrintMessage( 4, "Unable to set spawnpoint, you are not in the same faction as the owner.")
+            ply:PrintMessage( 4, "Unable to set spawnpoint. You are not in the friends or in same faction with the owner.")
         end
     end
 end
