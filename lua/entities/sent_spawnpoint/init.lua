@@ -24,12 +24,7 @@ function createPlayerList( players )
 end
 
 local function isInSameFaction( ply, otherPly )
-    local factionID = ply:GetNWString( "FactionID" )
-    local otherFactionID = otherPly:GetNWString( "FactionID" )
-    
-    if factionID == "" then return false end
-    
-    return factionID == otherFactionID
+    return false -- TODO: Remove this functionality altogether
 end
 
 local function isFriendly( ply, otherPly )
