@@ -26,6 +26,9 @@ end
 local function isInSameFaction( ply, otherPly )
     local factionID = ply:GetNWString( "FactionID" )
     local otherFactionID = otherPly:GetNWString( "FactionID" )
+    
+    if factionID == "" then return false end
+    
     return factionID == otherFactionID
 end
 
