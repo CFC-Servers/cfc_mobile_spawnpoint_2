@@ -188,6 +188,7 @@ local heightOfSpawnPointPlusOne = 16
 local function SpawnPointHook( ply )
     local spawnPoint = ply.LinkedSpawnPoint
     if not spawnPoint or not spawnPoint:IsValid() then return end
+    if not util.IsInWorld( spawnPoint:GetPos() ) then return end
 
     local spawnPos = spawnPoint:GetPos() + Vector( 0, 0, heightOfSpawnPointPlusOne )
     ply:SetPos( spawnPos )
