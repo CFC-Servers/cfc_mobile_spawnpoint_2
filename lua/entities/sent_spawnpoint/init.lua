@@ -199,6 +199,13 @@ end
 hook.Remove( "PlayerSpawn", "SpawnPointHook" )
 hook.Add( "PlayerSpawn", "SpawnPointHook", SpawnPointHook )
 
+local function unlinkSpawnpointWhenEnteringPvp( ply )
+    local linkedSpawnPoint = ply.LinkedSpawnPoint
+    unlinkPlayerFromSpawnPoint( ply, linkedSpawnPoint )
+end
+
+hook.Add( "CFC_PvP_PlayerEnterPvp", "CFC_MobileSpawnpoint_PlayerEnterPvp", unlinkSpawnpointWhenEnteringPvp )
+
 -- Stubs from here on
 
 function ENT:Think() end
