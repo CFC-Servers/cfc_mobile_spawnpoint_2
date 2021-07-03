@@ -1,6 +1,6 @@
 AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
-include( 'shared.lua' )
+include( "shared.lua" )
 
 -- Chat command config
 spawnPointCommands = {
@@ -103,7 +103,6 @@ function unlinkThisSpawnPointCommand( ply, text, _, _ )
 
     local spawnPoint = targetedEntity
     local spawnPointOwner = spawnPoint:CPPIGetOwner()
-    local playerOwnsSpawnPoint = spawnPointOwner == ply
     local playerIsAdmin = ply:IsAdmin()
 
     if not ( playerOwnsSpawnpoint or playerIsAdmin ) then return ply:PrintMessage( 4, "That's not yours! You can't unlink others from this Spawn Point" ) end
@@ -128,7 +127,7 @@ hook.Remove( "PlayerDisconnected", "UnlinkPlayerOnDisconnect" )
 hook.Add( "PlayerDisconnected", "UnlinkPlayerOnDisconnect", unlinkPlayerOnDisconnect )
 
 -- Entity Methods
-function ENT:SpawnFunction( ply, tr )
+function ENT:SpawnFunction( _, tr )
     if not tr.Hit then return end
     local SpawnPos = tr.HitPos
     local ent = ents.Create( "sent_spawnpoint" )
@@ -141,17 +140,17 @@ end
 
 function ENT:Initialize()
     local effectdata1 = EffectData()
-    effectdata1:SetOrigin( self.Entity:GetPos() )
+    effectdata1:SetOrigin( self:GetPos() )
     util.Effect( "spawnpoint_start", effectdata1, true, true )
 
-    self.Entity:SetModel( "models/props_combine/combine_mine01.mdl" )
-    self.Entity:PhysicsInit( SOLID_VPHYSICS )
-    self.Entity:SetMoveType( MOVETYPE_VPHYSICS )
-    self.Entity:SetSolid( SOLID_VPHYSICS )
+    self:SetModel( "models/props_combine/combine_mine01.mdl" )
+    self:PhysicsInit( SOLID_VPHYSICS )
+    self:SetMoveType( MOVETYPE_VPHYSICS )
+    self:SetSolid( SOLID_VPHYSICS )
     self:SetUseType( SIMPLE_USE )
-    self.Entity.LinkedPlayers = {}
+    self.LinkedPlayers = {}
 
-    local phys = self.Entity:GetPhysicsObject()
+    local phys = self:GetPhysicsObject()
     if not phys:IsValid() then return end
 
     phys:Wake()
@@ -161,20 +160,20 @@ end
 
 function ENT:OnRemove()
     local effectdata1 = EffectData()
-    effectdata1:SetOrigin( self.Entity:GetPos() )
+    effectdata1:SetOrigin( self:GetPos() )
     util.Effect( "spawnpoint_start", effectdata1, true, true )
 
-    unlinkAllPlayersFromSpawnPoint( self.Entity, {} )
+    unlinkAllPlayersFromSpawnPoint( self, {} )
 end
 
-function ENT:Use( ply, caller )
-    local playerLinkedToSpawnPoint = ply.LinkedSpawnPoint == self.Entity
+function ENT:Use( ply )
+    local playerLinkedToSpawnPoint = ply.LinkedSpawnPoint == self
 
     if playerLinkedToSpawnPoint then
-        unlinkPlayerFromSpawnPoint( ply, self.Entity )
+        unlinkPlayerFromSpawnPoint( ply, self )
         ply:PrintMessage( 4, "Spawn Point unlinked" )
     else
-        local success = linkPlayerToSpawnPoint( ply, self.Entity )
+        local success = linkPlayerToSpawnPoint( ply, self )
 
         if success then
             ply:PrintMessage( 4, "Spawn Point set. Say !unlinkspawn to unlink" )
@@ -212,8 +211,8 @@ hook.Add( "CFC_PvP_PlayerEnterPvp", "CFC_MobileSpawnpoint_PlayerEnterPvp", unlin
 
 function ENT:Think() end
 
-function ENT:OnTakeDamage( dmginfo ) end
+function ENT:OnTakeDamage() end
 
 function ENT:PhysicsUpdate() end
 
-function ENT:PhysicsCollide( data, physobj ) end
+function ENT:PhysicsCollide() end
