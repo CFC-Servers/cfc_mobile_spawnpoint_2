@@ -3,10 +3,9 @@ EFFECT.b = math.random( 1, 255 )
 EFFECT.g = math.random( 1, 255 )
 
 function EFFECT:Init( data )
-	local NumParticles = 0
 	local Pos = data:GetOrigin()
 	local emitter = ParticleEmitter( Pos )
-		for i= 0, 4 do
+		for i = 0, 4 do
 			local vel = ( VectorRand() * 20 ) * math.Rand( 0.001, 0.2 )
 			vel.z = -( ( vel.x * vel.x ) + ( vel.y * vel.y ) )
 			local particle = emitter:Add( "ss/light", Pos + VectorRand() * 16 )
@@ -27,7 +26,7 @@ function EFFECT:Think( )
 	return false
 end
 
-function EFFECT:Render()	
+function EFFECT:Render()
 end
 
 
