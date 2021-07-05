@@ -103,9 +103,10 @@ function unlinkThisSpawnPointCommand( ply, text, _, _ )
 
     local spawnPoint = targetedEntity
     local spawnPointOwner = spawnPoint:CPPIGetOwner()
+    local playerOwnsSpawnPoint = spawnPointOwner == ply
     local playerIsAdmin = ply:IsAdmin()
 
-    if not ( playerOwnsSpawnpoint or playerIsAdmin ) then return ply:PrintMessage( 4, "That's not yours! You can't unlink others from this Spawn Point" ) end
+    if not ( playerOwnsSpawnPoint or playerIsAdmin ) then return ply:PrintMessage( 4, "That's not yours! You can't unlink others from this Spawn Point" ) end
 
     local excludedPlayers = createPlayerList( { spawnPointOwner } )
 
