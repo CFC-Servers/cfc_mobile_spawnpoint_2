@@ -24,7 +24,7 @@ function createPlayerList( players )
 end
 
 local function isInSameFaction( ply, otherPly )
-    return false -- TODO: Remove this functionality altogetherr
+    return false -- TODO: Remove this functionality altogether
 end
 
 local function isFriendly( ply, otherPly )
