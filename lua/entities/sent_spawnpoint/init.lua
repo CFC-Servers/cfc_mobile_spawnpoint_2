@@ -75,9 +75,9 @@ function unlinkAllPlayersFromSpawnPoint( spawnPoint, excludedPlayers )
 end
 
 -- Chat commands
-function unlinkSpawnPointCommand( ply, text, _, _ )
+function unlinkSpawnPointCommand( ply, txt, _, _ )
     -- Removes whitepace from text
-    local text = string.lower( text ):gsub( "%s+", "" )
+    local text = string.lower( txt ):gsub( "%s+", "" )
     local unlinkSpawnCommands = spawnPointCommands.unlinkSpawnPoint
 
     if not unlinkSpawnCommands[text] then return end
@@ -89,8 +89,8 @@ end
 hook.Remove( "PlayerSay", "UnlinkSpawnPointCommand" )
 hook.Add( "PlayerSay", "UnlinkSpawnPointCommand", unlinkSpawnPointCommand )
 
-function unlinkThisSpawnPointCommand( ply, text, _, _ )
-    local text = string.lower( text ):gsub( "%s+", "" )
+function unlinkThisSpawnPointCommand( ply, txt, _, _ )
+    local text = string.lower( txt ):gsub( "%s+", "" )
     local unlinkThisSpawnCommands = spawnPointCommands.unlinkThisSpawnPoint
 
     if not unlinkThisSpawnCommands[text] then return end
