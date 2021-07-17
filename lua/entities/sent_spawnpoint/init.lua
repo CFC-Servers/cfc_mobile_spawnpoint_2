@@ -202,6 +202,7 @@ hook.Add( "PlayerSpawn", "SpawnPointHook", SpawnPointHook )
 local function unlinkSpawnpointWhenEnteringPvp( ply )
     local linkedSpawnPoint = ply.LinkedSpawnPoint
     unlinkPlayerFromSpawnPoint( ply, linkedSpawnPoint )
+    ply:ChatPrint( "You've been unlinked from a Spawn Point, because you entered PvP!" )
 end
 
 hook.Add( "CFC_PvP_PlayerEnterPvp", "CFC_MobileSpawnpoint_PlayerEnterPvp", unlinkSpawnpointWhenEnteringPvp )
