@@ -23,13 +23,8 @@ function createPlayerList( players )
     return playerList
 end
 
-local function isInSameFaction( ply, otherPly )
-    return false -- TODO: Remove this functionality altogether
-end
-
 local function isFriendly( ply, otherPly )
     if ply == otherPly then return true end
-    if isInSameFaction( ply, otherPly ) then return true  end
 
     local friends = ply:CPPIGetFriends()
     if friends == CPPI.CPPI_DEFER then return false end
@@ -39,7 +34,7 @@ end
 function linkPlayerToSpawnPoint( ply, spawnPoint )
     if not IsValid( ply ) then return end
     if not IsValid( spawnPoint ) then return end
-    if not isFriendly( ply, spawnPoint:CPPIGetOwner() ) then return end
+    if not isFriendly( spawnPoint:CPPIGetOwner(), ply ) then return end
 
     ply.LinkedSpawnPoint = spawnPoint
     spawnPoint.LinkedPlayers[ply] = "Linked"
