@@ -1,3 +1,5 @@
+resource.AddWorkshop( "3114959065" )
+
 local HOOK_CANTOOL = "CFC_Spawnpoint2_BannedTools"
 local bannedTools = {
     ["nocollideeverything"] = true,
