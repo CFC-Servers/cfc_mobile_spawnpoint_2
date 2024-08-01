@@ -2,7 +2,14 @@
 CFC's refactor of the CFC Mobile SpawnPoint 2 
 
 
-## Serverside Hooks
+## Server Convars
+
+| Convar | Description | Default |
+| :---: | :---: | :---: |
+| sbox_maxsent_spawnpoint | The max number of spawn points per player. | 1 |
+
+
+## Server Hooks
 
 - `denyReason = CFC_SpawnPoints_DenyLink( spawnPoint, ply )`
   - Return true or a string to prevent a player from linking to a spawn point.
