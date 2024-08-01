@@ -119,11 +119,9 @@ function ENT:UnlinkAllPlayers()
     end
 end
 
-function ENT:UnlinkAllPlayersExcept( excludedPlayers )
-    excludedPlayers = excludedPlayers or {}
-
+function ENT:UnlinkAllPlayersExcept( excludedPlayersLookup )
     for ply, _ in pairs( self.LinkedPlayers ) do
-        if IsValid( ply ) and not excludedPlayers[ply] then
+        if IsValid( ply ) and not excludedPlayersLookup[ply] then
             self:UnlinkPlayer( ply )
             ply:PrintMessage( 4, "You've been unlinked from a Spawn Point!" )
         end
