@@ -2,206 +2,217 @@ AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 include( "shared.lua" )
 
--- Chat command config
-spawnPointCommands = {
-    ["unlinkSpawnPoint"] = {
-        ["!unlinkspawn"] = true,
-        ["!unlinkspawnpoint"] = true
-    },
-    ["unlinkThisSpawnPoint"] = {
-        ["!unlinkthis"] = true
-    }
-}
+local COOLDOWN_ON_POINT_SPAWN
+local INTERACT_COOLDOWN
 
--- Helper Functions
-function createPlayerList( players )
-    local playerList = {}
-    for _, ply in pairs( players ) do
-        playerList[ply] = true
+local EFF_SPAWN_COLOR_ANG = Angle( 150, 150, 255 )
+local EFF_COOLDOWN_FINISHED_COLOR_ANG = Angle( 150, 255, 150 )
+local EFF_REMOVE_COLOR_ANG = Angle( 240, 70, 100 )
+local EFF_LINK_COLOR_ANG = Angle( 50, 255, 50 )
+local EFF_UNLINK_COLOR_ANG = Angle( 70, 0, 140 )
+
+
+----- PRIVATE FUNCTIONS -----
+
+local function doPointEffect( spawnPoint, colorAng )
+    local eff = EffectData()
+    eff:SetOrigin( spawnPoint:GetPos() )
+    eff:SetAngles( colorAng )
+    util.Effect( "spawnpoint_start", eff, true, true )
+end
+
+local function makeSpawnPoint( ply, data )
+    local validPly = IsValid( ply )
+    if validPly and not ply:CheckLimit( "sent_spawnpoint" ) then return end
+
+    local denyReason = hook.Run( "CFC_SpawnPoints_DenyCreation", ply, data )
+
+    if denyReason then
+        denyReason = type( denyReason ) == "string" and denyReason
+
+        net.Start( "CFC_SpawnPoints_CreationDenied" )
+        net.WriteString( denyReason or "Failed to create Spawn Point" )
+        net.Send( ply )
+
+        return
     end
 
-    return playerList
-end
-
-local function isFriendly( ply, otherPly )
-    if ply == otherPly then return true end
-
-    local friends = ply:CPPIGetFriends()
-    if friends == CPPI.CPPI_DEFER then return false end
-    return table.HasValue( friends, otherPly )
-end
-
-function linkPlayerToSpawnPoint( ply, spawnPoint )
-    if not IsValid( ply ) then return end
-    if not IsValid( spawnPoint ) then return end
-    if not isFriendly( spawnPoint:CPPIGetOwner(), ply ) then return end
-
-    ply.LinkedSpawnPoint = spawnPoint
-    spawnPoint.LinkedPlayers[ply] = "Linked"
-
-    return true
-end
-
-function unlinkPlayerFromSpawnPoint( ply, spawnPoint )
-    if not IsValid( ply ) then return end
-    if not IsValid( spawnPoint ) then return end
-
-    ply.LinkedSpawnPoint = nil
-    spawnPoint.LinkedPlayers[ply] = nil
-end
-
-function unlinkAllPlayersFromSpawnPoint( spawnPoint, excludedPlayers )
-    if not IsValid( spawnPoint ) then return end
-
-    local linkedPlayers = spawnPoint.LinkedPlayers
-    local spawnPointOwner = spawnPoint:CPPIGetOwner()
-
-    for ply, _ in pairs( linkedPlayers ) do
-        if IsValid( ply ) then
-            local playerIsNotExcluded = excludedPlayers[ply] == nil
-            local playerIsNotSpawnPointOwner = spawnPointOwner ~= ply
-
-            if playerIsNotExcluded and playerIsNotSpawnPointOwner then
-               unlinkPlayerFromSpawnPoint( ply, spawnPoint )
-               ply:PrintMessage( 4, "You've been unlinked from a Spawn Point!" )
-            end
-        end
-    end
-end
-
--- Chat commands
-function unlinkSpawnPointCommand( ply, txt, _, _ )
-    -- Removes whitepace from text
-    local text = string.lower( txt ):gsub( "%s+", "" )
-    local unlinkSpawnCommands = spawnPointCommands.unlinkSpawnPoint
-
-    if not unlinkSpawnCommands[text] then return end
-
-    local linkedSpawnPoint = ply.LinkedSpawnPoint
-    unlinkPlayerFromSpawnPoint( ply, linkedSpawnPoint )
-    ply:PrintMessage( 4, "Spawn Point unlinked" )
-end
-hook.Remove( "PlayerSay", "UnlinkSpawnPointCommand" )
-hook.Add( "PlayerSay", "UnlinkSpawnPointCommand", unlinkSpawnPointCommand )
-
-function unlinkThisSpawnPointCommand( ply, txt, _, _ )
-    local text = string.lower( txt ):gsub( "%s+", "" )
-    local unlinkThisSpawnCommands = spawnPointCommands.unlinkThisSpawnPoint
-
-    if not unlinkThisSpawnCommands[text] then return end
-
-    local targetedEntity = ply:GetEyeTraceNoCursor().Entity
-    if not ( targetedEntity and targetedEntity:IsValid() ) then return end
-
-    local isSpawnPoint = targetedEntity:GetClass() == "sent_spawnpoint"
-    if not isSpawnPoint then return ply:PrintMessage( 4, "You must be looking at a Spawn Point to use this command" ) end
-
-    local spawnPoint = targetedEntity
-    local spawnPointOwner = spawnPoint:CPPIGetOwner()
-    local playerOwnsSpawnPoint = spawnPointOwner == ply
-    local playerIsAdmin = ply:IsAdmin()
-
-    if not ( playerOwnsSpawnPoint or playerIsAdmin ) then return ply:PrintMessage( 4, "That's not yours! You can't unlink others from this Spawn Point" ) end
-
-    local excludedPlayers = createPlayerList( { spawnPointOwner } )
-
-    unlinkAllPlayersFromSpawnPoint( spawnPoint, excludedPlayers )
-    ply:PrintMessage( 4, "All players except the owner have been unlinked from this Spawn Point" )
-end
-
-hook.Remove( "PlayerSay", "UnlinkThisSpawnPointCommand" )
-hook.Add( "PlayerSay", "UnlinkThisSpawnPointCommand", unlinkThisSpawnPointCommand )
-
-
-local function unlinkPlayerOnDisconnect( ply )
-    local linkedSpawnPoint = ply.LinkedSpawnPoint
-    if not linkedSpawnPoint then return end
-
-    unlinkPlayerFromSpawnPoint( ply, linkedSpawnPoint )
-end
-hook.Remove( "PlayerDisconnected", "UnlinkPlayerOnDisconnect" )
-hook.Add( "PlayerDisconnected", "UnlinkPlayerOnDisconnect", unlinkPlayerOnDisconnect )
-
--- Entity Methods
-function ENT:SpawnFunction( _, tr )
-    if not tr.Hit then return end
-    local SpawnPos = tr.HitPos
     local ent = ents.Create( "sent_spawnpoint" )
-    ent:SetPos( SpawnPos )
+    if not ent:IsValid() then return end
+
+    duplicator.DoGeneric( ent, data )
     ent:Spawn()
     ent:Activate()
+
+    duplicator.DoGenericPhysics( ent, ply, data )
+
+    if validPly then
+        ply:AddCount( "sent_spawnpoint", ent )
+        ply:AddCleanup( "sent_spawnpoint", ent )
+        ent._spawnPointCreator = ply
+    end
+
+    return ent
+end
+
+
+----- ENTITY METHODS -----
+
+function ENT:SpawnFunction( ply, tr )
+    if not tr.Hit then return end
+
+    -- For some unholy reason, not adding this tiny offset makes it spawn 7.594 units higher than it should.
+    local pos = tr.HitPos + Vector( 0, 0, -0.1 )
+
+    local ent = makeSpawnPoint( ply, {
+        Pos = pos,
+        Angle = Angle( 0, 0, 0 ),
+    } )
 
     return ent
 end
 
 function ENT:Initialize()
-    local effectdata1 = EffectData()
-    effectdata1:SetOrigin( self:GetPos() )
-    util.Effect( "spawnpoint_start", effectdata1, true, true )
+    doPointEffect( self, EFF_SPAWN_COLOR_ANG )
 
     self:SetModel( "models/props_combine/combine_mine01.mdl" )
     self:PhysicsInit( SOLID_VPHYSICS )
     self:SetMoveType( MOVETYPE_VPHYSICS )
     self:SetSolid( SOLID_VPHYSICS )
     self:SetUseType( SIMPLE_USE )
-    self.LinkedPlayers = {}
+    self._linkedPlayers = {}
+    self._interactCooldownEndTimes = {}
 
     local phys = self:GetPhysicsObject()
-    if not phys:IsValid() then return end
+    if phys:IsValid() then
+        phys:Wake()
+        phys:EnableDrag( true )
+        phys:EnableMotion( false )
+    end
 
-    phys:Wake()
-    phys:EnableDrag( true )
-    phys:EnableMotion( false )
+    local cooldown = COOLDOWN_ON_POINT_SPAWN:GetFloat()
+
+    self._spawnPointCooldownEndTime = CurTime() + cooldown
+
+    if cooldown > 0 then
+        timer.Simple( cooldown, function()
+            if not IsValid( self ) then return end
+
+            doPointEffect( self, EFF_COOLDOWN_FINISHED_COLOR_ANG )
+            self:EmitSound( "npc/roller/remote_yes.wav", 85, 110 )
+        end )
+    end
 end
 
 function ENT:OnRemove()
-    local effectdata1 = EffectData()
-    effectdata1:SetOrigin( self:GetPos() )
-    util.Effect( "spawnpoint_start", effectdata1, true, true )
+    local atLeastOneLinked = false
 
-    unlinkAllPlayersFromSpawnPoint( self, {} )
+    for ply in pairs( self._linkedPlayers ) do
+        if IsValid( ply ) then
+            atLeastOneLinked = true
+            break
+        end
+    end
+
+    if atLeastOneLinked then
+        self:EmitSound( "npc/roller/mine/rmine_blades_out2.wav", 90, 90 )
+    end
+
+    doPointEffect( self, EFF_REMOVE_COLOR_ANG )
+    self:UnlinkAllPlayers()
 end
 
 function ENT:Use( ply )
-    local playerLinkedToSpawnPoint = ply.LinkedSpawnPoint == self
+    local interactCooldown = INTERACT_COOLDOWN:GetFloat()
 
-    if playerLinkedToSpawnPoint then
-        unlinkPlayerFromSpawnPoint( ply, self )
+    if interactCooldown > 0 then
+        local now = CurTime()
+        local endTimes = self._interactCooldownEndTimes
+        local plyEndTime = endTimes[ply]
+
+        if plyEndTime and plyEndTime > now then return end
+
+        endTimes[ply] = now + interactCooldown
+    end
+
+    local isLinked = ply._linkedSpawnPoint == self
+
+    if isLinked then
+        -- Unlink
+        self:UnlinkPlayer( ply )
+        self:EmitSound( "npc/dog/dog_disappointed.wav", 85, 90 )
+        doPointEffect( self, EFF_UNLINK_COLOR_ANG )
         ply:PrintMessage( 4, "Spawn Point unlinked" )
     else
-        local success = linkPlayerToSpawnPoint( ply, self )
+        local success, failReason = self:LinkPlayer( ply )
 
         if success then
+            -- Link
+            self:EmitSound( "buttons/button17.wav", 85, 90 )
+            doPointEffect( self, EFF_LINK_COLOR_ANG )
             ply:PrintMessage( 4, "Spawn Point set. Say !unlinkspawn to unlink" )
         else
-            ply:PrintMessage( 4, "Unable to set spawnpoint. You are not in the friends or in same faction with the owner.")
+            -- Link Failed
+            net.Start( "CFC_SpawnPoints_LinkDenySound" )
+            net.Send( ply )
+
+            if failReason then
+                ply:PrintMessage( 4, "Unable to set spawnpoint. " .. failReason )
+            else
+                ply:PrintMessage( 4, "Unable to set spawnpoint." )
+            end
         end
     end
 end
 
-local heightOfSpawnPointPlusOne = 16
-local function SpawnPointHook( ply )
-    local spawnPoint = ply.LinkedSpawnPoint
-    if not spawnPoint or not spawnPoint:IsValid() then return end
-    if not spawnPoint:IsInWorld() then
-        ply:ChatPrint( "Your linked spawn point is in an invalid location" )
-        return
+function ENT:LinkPlayer( ply )
+    if not IsValid( ply ) then return end
+    local oldSpawnPoint = ply._linkedSpawnPoint
+    if oldSpawnPoint == self then return end
+
+    local denyReason = hook.Run( "CFC_SpawnPoints_DenyLink", self, ply )
+
+    if denyReason then
+        denyReason = type( denyReason ) == "string" and denyReason or nil
+
+        return false, denyReason
     end
 
-    local spawnPos = spawnPoint:GetPos() + Vector( 0, 0, heightOfSpawnPointPlusOne )
-    ply:SetPos( spawnPos )
-end
-hook.Remove( "PlayerSpawn", "SpawnPointHook" )
-hook.Add( "PlayerSpawn", "SpawnPointHook", SpawnPointHook )
+    if IsValid( oldSpawnPoint ) then
+        oldSpawnPoint:UnlinkPlayer( ply )
+    end
 
-local function unlinkSpawnpointWhenEnteringPvp( ply )
-    if not IsValid( ply.LinkedSpawnPoint ) then return end
-    local linkedSpawnPoint = ply.LinkedSpawnPoint
-    unlinkPlayerFromSpawnPoint( ply, linkedSpawnPoint )
-    ply:ChatPrint( "You've been unlinked from a Spawn Point, because you entered PvP!" )
+    ply._linkedSpawnPoint = self
+    self._linkedPlayers[ply] = "Linked"
+
+    return true
 end
 
--- Stubs from here on
+function ENT:UnlinkPlayer( ply )
+    if not IsValid( ply ) then return end
+    if ply._linkedSpawnPoint ~= self then return end
+
+    ply._linkedSpawnPoint = nil
+    self._linkedPlayers[ply] = nil
+end
+
+function ENT:UnlinkAllPlayers()
+    for ply in pairs( self._linkedPlayers ) do
+        if IsValid( ply ) then
+            self:UnlinkPlayer( ply )
+            ply:PrintMessage( 4, "You've been unlinked from a Spawn Point!" )
+        end
+    end
+end
+
+function ENT:UnlinkAllPlayersExcept( excludedPlayersLookup )
+    for ply in pairs( self._linkedPlayers ) do
+        if IsValid( ply ) and not excludedPlayersLookup[ply] then
+            self:UnlinkPlayer( ply )
+            ply:PrintMessage( 4, "You've been unlinked from a Spawn Point!" )
+        end
+    end
+end
 
 function ENT:Think() end
 
@@ -210,3 +221,14 @@ function ENT:OnTakeDamage() end
 function ENT:PhysicsUpdate() end
 
 function ENT:PhysicsCollide() end
+
+
+----- SETUP -----
+
+-- Needed to prevent dupes from bypassing the spawn limit
+duplicator.RegisterEntityClass( "sent_spawnpoint", makeSpawnPoint, "Data" )
+
+hook.Add( "InitPostEntity", "CFC_SpawnPoints_SentSpawnPoint_Setup", function()
+    COOLDOWN_ON_POINT_SPAWN = GetConVar( "cfc_spawnpoints_cooldown_on_point_spawn" )
+    INTERACT_COOLDOWN = GetConVar( "cfc_spawnpoints_interact_cooldown" )
+end )
