@@ -56,6 +56,29 @@ hook.Add( "PlayerDisconnected", "UnlinkPlayerOnDisconnect", function( ply )
     spawnPoint:UnlinkPlayer( ply )
 end )
 
+-- Denies linking based on CPPI friend status.
+-- Remove/overwrite this hook in InitPostEntity if you need a different 'friendliness' check.
+hook.Add( "CFC_SpawnPoints_DenyLink", "CFC_SpawnPoints_FriendCheck", function( spawnPoint, ply )
+    if not CPPI then
+        if spawnPoint.SpawnPointCreator == ply then return end
+
+        return "You can only link to your own Spawn Points."
+    end
+
+    local owner = spawnPoint:CPPIGetOwner()
+    if ply == owner then return end
+
+    local friends = owner:CPPIGetFriends()
+
+    if friends == CPPI.CPPI_DEFER then
+        return "You can only link to your own Spawn Points."
+    end
+
+    if table.HasValue( friends, ply ) then return end
+
+    return "You are not buddied with the Spawn Point's owner."
+end )
+
 
 ----- CHAT COMMANDS -----
 

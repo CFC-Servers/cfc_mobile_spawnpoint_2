@@ -5,14 +5,6 @@ include( "shared.lua" )
 
 ----- PRIVATE FUNCTIONS -----
 
-local function isFriendly( ply, otherPly )
-    if ply == otherPly then return true end
-
-    local friends = ply:CPPIGetFriends()
-    if friends == CPPI.CPPI_DEFER then return false end
-    return table.HasValue( friends, otherPly )
-end
-
 local function makeSpawnPoint( ply, data )
     local validPly = IsValid( ply )
     if validPly and not ply:CheckLimit( "sent_spawnpoint" ) then return end
@@ -29,6 +21,7 @@ local function makeSpawnPoint( ply, data )
     if validPly then
         ply:AddCount( "sent_spawnpoint", ent )
         ply:AddCleanup( "sent_spawnpoint", ent )
+        ent.SpawnPointCreator = ply
     end
 
     return ent
@@ -83,12 +76,14 @@ function ENT:Use( ply )
         self:UnlinkPlayer( ply )
         ply:PrintMessage( 4, "Spawn Point unlinked" )
     else
-        local success = self:LinkPlayer( ply )
+        local success, failReason = self:LinkPlayer( ply )
 
         if success then
             ply:PrintMessage( 4, "Spawn Point set. Say !unlinkspawn to unlink" )
+        elseif failReason then
+            ply:PrintMessage( 4, "Unable to set spawnpoint. " .. failReason )
         else
-            ply:PrintMessage( 4, "Unable to set spawnpoint. You are not in the friends or in same faction with the owner." )
+            ply:PrintMessage( 4, "Unable to set spawnpoint." )
         end
     end
 end
@@ -98,7 +93,13 @@ function ENT:LinkPlayer( ply )
     local oldSpawnPoint = ply.LinkedSpawnPoint
     if oldSpawnPoint == self then return end
 
-    if not isFriendly( self:CPPIGetOwner(), ply ) then return end
+    local denyReason = hook.Run( "CFC_SpawnPoints_DenyLink", self, ply )
+
+    if denyReason then
+        denyReason = type( denyReason ) == "string" and denyReason or nil
+
+        return false, denyReason
+    end
 
     if IsValid( oldSpawnPoint ) then
         oldSpawnPoint:UnlinkPlayer( ply )
