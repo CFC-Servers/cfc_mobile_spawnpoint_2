@@ -133,7 +133,7 @@ hook.Add( "PlayerSpawn", "cfc_mobilespawns_respawnlinkdelay", function( spawned 
 end )
 
 local defaultLinkDelay = 1.75
-desc = "How long does a spawnpoint have to exist for, before a player can link to it, -1 for default (" .. tostring( defaultLinkDelay ) .. ")"
+desc = "How long does a mobile spawnpoint have to exist for, before a player can link to it, -1 for default (" .. tostring( defaultLinkDelay ) .. ")"
 
 local linkDelayVar = CreateConVar( "cfc_mobilespawn_linkdelay", -1, FCVAR_ARCHIVE, desc )
 local function linkDelay()
@@ -257,6 +257,7 @@ function ENT:TryToLink( ply )
     elseif not playerLinkedToSpawnPoint then
         local is, _, reason = self:IsIllegal()
         if is then
+            self:MakeLegal()
             self:DoQuietSound( "npc/roller/code2.wav" )
             ply:PrintMessage( HUD_PRINTCENTER, "Can't link to this because...\n" .. reason )
             return
@@ -469,15 +470,17 @@ function ENT:IsIllegal()
 end
 
 function ENT:Think()
-    local is, doUnlink, reason = self:IsIllegal()
-    if is then
-        self:MakeLegal()
-        if doUnlink then
-            unlinkAllPlayersFromSpawnPoint( self, {}, "You've been disconnected from your spawnpoint because...\n" .. reason )
+    if table.Count( self.LinkedPlayers ) > 0 then
+        local is, doUnlink, reason = self:IsIllegal()
+        if is then
+            self:MakeLegal()
+            if doUnlink then
+                unlinkAllPlayersFromSpawnPoint( self, {}, "You've been disconnected from your spawnpoint because...\n" .. reason )
 
-        else
-            displayMessageToAllSpawners( self, "You won't respawn at your spawnpoint because...\n" .. reason )
+            else
+                displayMessageToAllSpawners( self, "You won't respawn at your spawnpoint because...\n" .. reason )
 
+            end
         end
     end
     if self.nextLinkedFX < CurTime() then
