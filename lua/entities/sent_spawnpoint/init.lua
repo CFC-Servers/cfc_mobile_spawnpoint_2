@@ -9,6 +9,18 @@ local function makeSpawnPoint( ply, data )
     local validPly = IsValid( ply )
     if validPly and not ply:CheckLimit( "sent_spawnpoint" ) then return end
 
+    local denyReason = hook.Run( "CFC_SpawnPoints_DenyCreation", ply, data )
+
+    if denyReason then
+        denyReason = type( denyReason ) == "string" and denyReason
+
+        net.Start( "CFC_SpawnPoints_CreationDenied" )
+        net.WriteString( denyReason or "Failed to create Spawn Point" )
+        net.Send( ply )
+
+        return
+    end
+
     local ent = ents.Create( "sent_spawnpoint" )
     if not ent:IsValid() then return end
 
