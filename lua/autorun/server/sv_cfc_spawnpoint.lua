@@ -17,6 +17,8 @@ CFC_SpawnPoints.BANNED_TOOLS = {
     ["nocollide"] = true,
 }
 
+local COOLDOWN_ON_PLY_SPAWN
+
 local commands = CFC_SpawnPoints.COMMANDS
 local bannedTools = CFC_SpawnPoints.BANNED_TOOLS
 
@@ -26,6 +28,10 @@ util.AddNetworkString( "CFC_SpawnPoints_CreationDenied" )
 
 
 ----- SETUP -----
+
+hook.Add( "InitPostEntity", "CFC_SpawnPoints_Setup", function()
+    COOLDOWN_ON_PLY_SPAWN = GetConVar( "cfc_spawnpoints_cooldown_on_ply_spawn" )
+end )
 
 hook.Add( "PlayerSpawn", "SpawnPointHook", function( ply )
     local spawnPoint = ply._linkedSpawnPoint
@@ -37,6 +43,12 @@ hook.Add( "PlayerSpawn", "SpawnPointHook", function( ply )
 
     local spawnPos = spawnPoint:GetPos() + Vector( 0, 0, heightOfSpawnPointPlusOne )
     ply:SetPos( spawnPos )
+end )
+
+hook.Add( "PlayerSpawn", "CFC_SpawnPoints_ApplyCooldownFromPlayerSpawn", function( ply )
+    local cooldown = COOLDOWN_ON_PLY_SPAWN:GetFloat()
+
+    ply._spawnPointCooldownEndTime = CurTime() + cooldown
 end )
 
 hook.Add( "CanTool", "CFC_Spawnpoint2_BannedTools", function( ply, tr, tool )
@@ -56,6 +68,39 @@ hook.Add( "PlayerDisconnected", "UnlinkPlayerOnDisconnect", function( ply )
     if not spawnPoint.UnlinkPlayer then return end
 
     spawnPoint:UnlinkPlayer( ply )
+end )
+
+hook.Add( "CFC_SpawnPoints_DenyCreation", "CFC_SpawnPoints_EnforcePlayerSpawnCooldown", function( ply )
+    local cooldownEndTime = ply._spawnPointCooldownEndTime
+    if not cooldownEndTime then return end
+
+    if CurTime() < cooldownEndTime then
+        if hook.Run( "CFC_SpawnPoints_IgnorePlayerSpawnCooldown", ply ) then return end
+
+        return "You must wait before creating a new Spawn Point"
+    end
+end )
+
+hook.Add( "CFC_SpawnPoints_DenyLink", "CFC_SpawnPoints_EnforcePlayerSpawnCooldown", function( _, ply )
+    local cooldownEndTime = ply._spawnPointCooldownEndTime
+    if not cooldownEndTime then return end
+
+    if CurTime() < cooldownEndTime then
+        if hook.Run( "CFC_SpawnPoints_IgnorePlayerSpawnCooldown", ply ) then return end
+
+        return "You must wait after spawning to make any links."
+    end
+end )
+
+hook.Add( "CFC_SpawnPoints_DenyLink", "CFC_SpawnPoints_EnforcePointSpawnCooldown", function( spawnPoint, ply )
+    local cooldownEndTime = spawnPoint._spawnPointCooldownEndTime
+    if not cooldownEndTime then return end
+
+    if CurTime() < cooldownEndTime then
+        if hook.Run( "CFC_SpawnPoints_IgnorePointSpawnCooldown", spawnPoint, ply ) then return end
+
+        return "The spawn point is not ready to be linked to yet."
+    end
 end )
 
 -- Denies linking based on CPPI friend status.

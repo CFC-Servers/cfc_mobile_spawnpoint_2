@@ -2,6 +2,8 @@ AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 include( "shared.lua" )
 
+local COOLDOWN_ON_POINT_SPAWN
+
 
 ----- PRIVATE FUNCTIONS -----
 
@@ -35,6 +37,10 @@ local function makeSpawnPoint( ply, data )
         ply:AddCleanup( "sent_spawnpoint", ent )
         ent._spawnPointCreator = ply
     end
+
+    local cooldown = COOLDOWN_ON_POINT_SPAWN:GetFloat()
+
+    ent._spawnPointCooldownEndTime = CurTime() + cooldown
 
     return ent
 end
@@ -162,3 +168,7 @@ function ENT:PhysicsCollide() end
 
 -- Needed to prevent dupes from bypassing the spawn limit
 duplicator.RegisterEntityClass( "sent_spawnpoint", makeSpawnPoint, "Data" )
+
+hook.Add( "InitPostEntity", "CFC_SpawnPoints_SentSpawnPoint_Setup", function()
+    COOLDOWN_ON_POINT_SPAWN = GetConVar( "cfc_spawnpoints_cooldown_on_point_spawn" )
+end )
