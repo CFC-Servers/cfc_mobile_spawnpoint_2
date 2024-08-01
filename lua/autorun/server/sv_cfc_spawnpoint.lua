@@ -61,49 +61,48 @@ hook.Add( "CanTool", "CFC_Spawnpoint2_BannedTools", function( ply, tr, tool )
 end )
 
 hook.Add( "PlayerDisconnected", "UnlinkPlayerOnDisconnect", function( ply )
-    local linkedSpawnPoint = ply.LinkedSpawnPoint
-    if not IsValid( linkedSpawnPoint ) then return end
-    if not linkedSpawnPoint.UnlinkPlayer then return end
+    local spawnPoint = ply.LinkedSpawnPoint
+    if not IsValid( spawnPoint ) then return end
+    if not spawnPoint.UnlinkPlayer then return end
 
-    linkedSpawnPoint:UnlinkPlayer( ply )
+    spawnPoint:UnlinkPlayer( ply )
 end )
 
 
 ----- CHAT COMMANDS -----
 
-hook.Add( "PlayerSay", "UnlinkSpawnPointCommand", function( ply, txt, _, _ )
-    -- Removes whitepace from text
-    local text = string.lower( txt ):gsub( "%s+", "" )
+hook.Add( "PlayerSay", "UnlinkSpawnPointCommand", function( ply, txt )
+    local text = string.lower( txt ):gsub( "%s+", "" ) -- Remove whitespace
     local unlinkSpawnCommands = commands.unlinkSpawnPoint
-
     if not unlinkSpawnCommands[text] then return end
 
-    local linkedSpawnPoint = ply.LinkedSpawnPoint
-    if not IsValid( linkedSpawnPoint ) then
+    local spawnPoint = ply.LinkedSpawnPoint
+    if not IsValid( spawnPoint ) then
         ply:PrintMessage( 4, "You are not linked to a Spawn Point" )
 
         return
     end
 
-    linkedSpawnPoint:UnlinkPlayer( ply )
+    spawnPoint:UnlinkPlayer( ply )
     ply:PrintMessage( 4, "Spawn Point unlinked" )
 end )
 
-hook.Add( "PlayerSay", "UnlinkThisSpawnPointCommand", function( ply, txt, _, _ )
-    local text = string.lower( txt ):gsub( "%s+", "" )
+hook.Add( "PlayerSay", "UnlinkThisSpawnPointCommand", function( ply, txt )
+    local text = string.lower( txt ):gsub( "%s+", "" ) -- Remove whitespace
     local unlinkThisSpawnCommands = commands.unlinkThisSpawnPoint
-
     if not unlinkThisSpawnCommands[text] then return end
 
-    local targetedEntity = ply:GetEyeTraceNoCursor().Entity
-    if not ( targetedEntity and targetedEntity:IsValid() ) then return end
+    local spawnPoint = ply:GetEyeTraceNoCursor().Entity
+    if not IsValid( spawnPoint ) then return end
 
-    local isSpawnPoint = targetedEntity:GetClass() == "sent_spawnpoint"
-    if not isSpawnPoint then return ply:PrintMessage( 4, "You must be looking at a Spawn Point to use this command" ) end
+    if spawnPoint:GetClass() ~= "sent_spawnpoint" then
+        ply:PrintMessage( 4, "You must be looking at a Spawn Point to use this command" )
 
-    local spawnPoint = targetedEntity
-    local spawnPointOwner = spawnPoint:CPPIGetOwner()
-    local playerOwnsSpawnPoint = spawnPointOwner == ply
+        return
+    end
+
+    local owner = spawnPoint:CPPIGetOwner()
+    local playerOwnsSpawnPoint = owner == ply
     local playerIsAdmin = ply:IsAdmin()
 
     if not ( playerOwnsSpawnPoint or playerIsAdmin ) then
@@ -112,7 +111,7 @@ hook.Add( "PlayerSay", "UnlinkThisSpawnPointCommand", function( ply, txt, _, _ )
         return
     end
 
-    local excludedPlayers = createPlayerList( { spawnPointOwner } )
+    local excludedPlayers = createPlayerList( { owner } )
 
     spawnPoint:UnlinkAllPlayers( excludedPlayers )
     ply:PrintMessage( 4, "All players except the owner have been unlinked from this Spawn Point" )

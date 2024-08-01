@@ -49,9 +49,9 @@ function ENT:SpawnFunction( ply, tr )
 end
 
 function ENT:Initialize()
-    local effectdata1 = EffectData()
-    effectdata1:SetOrigin( self:GetPos() )
-    util.Effect( "spawnpoint_start", effectdata1, true, true )
+    local eff = EffectData()
+    eff:SetOrigin( self:GetPos() )
+    util.Effect( "spawnpoint_start", eff, true, true )
 
     self:SetModel( "models/props_combine/combine_mine01.mdl" )
     self:PhysicsInit( SOLID_VPHYSICS )
@@ -69,17 +69,17 @@ function ENT:Initialize()
 end
 
 function ENT:OnRemove()
-    local effectdata1 = EffectData()
-    effectdata1:SetOrigin( self:GetPos() )
-    util.Effect( "spawnpoint_start", effectdata1, true, true )
+    local eff = EffectData()
+    eff:SetOrigin( self:GetPos() )
+    util.Effect( "spawnpoint_start", eff, true, true )
 
     self:UnlinkAllPlayers( {} )
 end
 
 function ENT:Use( ply )
-    local playerLinkedToSpawnPoint = ply.LinkedSpawnPoint == self
+    local isLinked = ply.LinkedSpawnPoint == self
 
-    if playerLinkedToSpawnPoint then
+    if isLinked then
         self:UnlinkPlayer( ply )
         ply:PrintMessage( 4, "Spawn Point unlinked" )
     else
@@ -88,7 +88,7 @@ function ENT:Use( ply )
         if success then
             ply:PrintMessage( 4, "Spawn Point set. Say !unlinkspawn to unlink" )
         else
-            ply:PrintMessage( 4, "Unable to set spawnpoint. You are not in the friends or in same faction with the owner.")
+            ply:PrintMessage( 4, "Unable to set spawnpoint. You are not in the friends or in same faction with the owner." )
         end
     end
 end
