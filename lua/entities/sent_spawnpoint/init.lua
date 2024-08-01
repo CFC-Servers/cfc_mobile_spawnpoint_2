@@ -4,6 +4,10 @@ include( "shared.lua" )
 
 local COOLDOWN_ON_POINT_SPAWN
 
+local EFF_SPAWN_COLOR_ANG = Angle( 150, 150, 255 )
+local EFF_COOLDOWN_FINISHED_COLOR_ANG = Angle( 150, 255, 150 )
+local EFF_REMOVE_COLOR_ANG = Angle( 240, 70, 100 )
+
 
 ----- PRIVATE FUNCTIONS -----
 
@@ -38,10 +42,6 @@ local function makeSpawnPoint( ply, data )
         ent._spawnPointCreator = ply
     end
 
-    local cooldown = COOLDOWN_ON_POINT_SPAWN:GetFloat()
-
-    ent._spawnPointCooldownEndTime = CurTime() + cooldown
-
     return ent
 end
 
@@ -62,6 +62,7 @@ end
 function ENT:Initialize()
     local eff = EffectData()
     eff:SetOrigin( self:GetPos() )
+    eff:SetAngles( EFF_SPAWN_COLOR_ANG )
     util.Effect( "spawnpoint_start", eff, true, true )
 
     self:SetModel( "models/props_combine/combine_mine01.mdl" )
@@ -72,16 +73,34 @@ function ENT:Initialize()
     self._linkedPlayers = {}
 
     local phys = self:GetPhysicsObject()
-    if not phys:IsValid() then return end
+    if phys:IsValid() then
+        phys:Wake()
+        phys:EnableDrag( true )
+        phys:EnableMotion( false )
+    end
 
-    phys:Wake()
-    phys:EnableDrag( true )
-    phys:EnableMotion( false )
+    local cooldown = COOLDOWN_ON_POINT_SPAWN:GetFloat()
+
+    self._spawnPointCooldownEndTime = CurTime() + cooldown
+
+    if cooldown > 0 then
+        timer.Simple( cooldown, function()
+            if not IsValid( self ) then return end
+
+            local eff2 = EffectData()
+            eff2:SetOrigin( self:GetPos() )
+            eff2:SetAngles( EFF_COOLDOWN_FINISHED_COLOR_ANG )
+            util.Effect( "spawnpoint_start", eff2, true, true )
+
+            self:EmitSound( "npc/roller/remote_yes.wav", 75, 110 )
+        end )
+    end
 end
 
 function ENT:OnRemove()
     local eff = EffectData()
     eff:SetOrigin( self:GetPos() )
+    eff:SetAngles( EFF_REMOVE_COLOR_ANG )
     util.Effect( "spawnpoint_start", eff, true, true )
 
     self:UnlinkAllPlayers()
