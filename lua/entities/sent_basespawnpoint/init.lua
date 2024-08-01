@@ -70,6 +70,21 @@ local function shapedShieldDamage()
     end
 end
 
+local defaultLinkDelay = 12
+desc = "How long does a BASE spawnpoint have to exist for, before a player can link to it, -1 for default (" .. tostring( defaultLinkDelay ) .. ")"
+
+local linkDelayVar = CreateConVar( "cfc_basespawn_linkdelay", -1, FCVAR_ARCHIVE, desc )
+local function linkDelay()
+    local var = linkDelayVar:GetFloat()
+    if var <= -1 then
+        return defaultLinkDelay
+
+    else
+        return var
+
+    end
+end
+
 local CurTime = CurTime
 
 ENT.IllegalToPickup = true
@@ -93,6 +108,9 @@ function ENT:SpawnpointPostInitialize()
     self.nextFindInterfering = 0
     self.interferingSpawns = {}
     self.blockShieldHealthRegen = CurTime() + self.ShieldSetupTime + self.ShieldRegenDelay / 4
+
+    self.mobileSpawns_LinkAge = CurTime() + linkDelay()
+
     timer.Simple( self.ShieldSetupTime, function()
         if not IsValid( self ) then return end
         -- tell all players that this is setup, ignoring PAS

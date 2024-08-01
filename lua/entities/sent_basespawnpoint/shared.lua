@@ -9,7 +9,7 @@ ENT.Spawnable			= true
 ENT.AdminSpawnable		= true
 
 ENT.SpawnsActive        = false
-ENT.ShieldSetupTime     = 30
+ENT.ShieldSetupTime     = 45
 
 function ENT:ShieldIsHolding()
     if self:GetShieldHealth() <= 0 then return end
