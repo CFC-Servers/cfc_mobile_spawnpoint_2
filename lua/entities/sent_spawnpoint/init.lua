@@ -122,14 +122,39 @@ end
 hook.Remove( "PlayerDisconnected", "UnlinkPlayerOnDisconnect" )
 hook.Add( "PlayerDisconnected", "UnlinkPlayerOnDisconnect", unlinkPlayerOnDisconnect )
 
--- Entity Methods
-function ENT:SpawnFunction( _, tr )
-    if not tr.Hit then return end
-    local SpawnPos = tr.HitPos
+
+local function makeSpawnPoint( ply, data )
+    local validPly = IsValid( ply )
+    if validPly and not ply:CheckLimit( "sent_spawnpoint" ) then return end
+
     local ent = ents.Create( "sent_spawnpoint" )
-    ent:SetPos( SpawnPos )
+    if not ent:IsValid() then return end
+
+    duplicator.DoGeneric( ent, data )
     ent:Spawn()
     ent:Activate()
+
+    duplicator.DoGenericPhysics( ent, ply, data )
+
+    if validPly then
+        ply:AddCount( "sent_spawnpoint", ent )
+        ply:AddCleanup( "sent_spawnpoint", ent )
+    end
+
+    return ent
+end
+
+-- Needed to prevent dupes from bypassing the spawn limit
+duplicator.RegisterEntityClass( "sent_spawnpoint", makeSpawnPoint, "Data" )
+
+-- Entity Methods
+function ENT:SpawnFunction( ply, tr )
+    if not tr.Hit then return end
+
+    local ent = makeSpawnPoint( ply, {
+        Pos = tr.HitPos,
+        Angle = Angle( 0, 0, 0 ),
+    } )
 
     return ent
 end
