@@ -113,6 +113,41 @@ hook.Remove( "PlayerDisconnected", "UnlinkPlayerOnDisconnect" )
 hook.Add( "PlayerDisconnected", "UnlinkPlayerOnDisconnect", unlinkPlayerOnDisconnect )
 
 
+local defaultRespawnLinkDelay = 10
+desc = "Delay until a player can link to a spawnpoint, after respawning, -1 for default (" .. tostring( defaultRespawnLinkDelay ) .. ")"
+
+local respawnLinkDelayVar = CreateConVar( "cfc_mobilespawn_respawnlinkdelay", -1, FCVAR_ARCHIVE, desc )
+local function respawnLinkDelay()
+    local var = respawnLinkDelayVar:GetFloat()
+    if var <= -1 then
+        return defaultRespawnLinkDelay
+
+    else
+        return var
+
+    end
+end
+hook.Add( "PlayerSpawn", "cfc_mobilespawns_respawnlinkdelay", function( spawned )
+    spawned.cfc_MobileSpawns_JustSpawnedBlock = CurTime() + respawnLinkDelay()
+
+end )
+
+local defaultLinkDelay = 1.75
+desc = "How long does a spawnpoint have to exist for, before a player can link to it, -1 for default (" .. tostring( defaultLinkDelay ) .. ")"
+
+local linkDelayVar = CreateConVar( "cfc_mobilespawn_linkdelay", -1, FCVAR_ARCHIVE, desc )
+local function linkDelay()
+    local var = linkDelayVar:GetFloat()
+    if var <= -1 then
+        return defaultLinkDelay
+
+    else
+        return var
+
+    end
+end
+
+
 -- Entity Methods
 function ENT:SpawnFunction( spawner, tr )
     if not tr.Hit then return end
@@ -148,6 +183,8 @@ function ENT:Initialize()
     self:SetSolid( SOLID_VPHYSICS )
     self:SetUseType( SIMPLE_USE )
     self.LinkedPlayers = {}
+
+    self.mobileSpawns_LinkAge = CurTime() + linkDelay()
 
     local phys = self:GetPhysicsObject()
     if IsValid( phys ) then
@@ -225,6 +262,27 @@ function ENT:TryToLink( ply )
             return
 
         end
+
+        if ply.cfc_MobileSpawns_JustSpawnedBlock > CurTime() then
+            local untilTime = math.abs( ply.cfc_MobileSpawns_JustSpawnedBlock - CurTime() )
+            untilTime = math.Round( untilTime, 1 )
+
+            self:DoQuietSound( "npc/roller/code2.wav" )
+            ply:PrintMessage( HUD_PRINTCENTER, "You just respawned.\nCan link to spawns in... " .. untilTime .. " seconds." )
+            return
+
+        end
+
+        if self.mobileSpawns_LinkAge > CurTime() then
+            local untilTime = math.abs( self.mobileSpawns_LinkAge - CurTime() )
+            untilTime = math.Round( untilTime, 1 )
+
+            self:DoQuietSound( "npc/roller/code2.wav" )
+            ply:PrintMessage( HUD_PRINTCENTER, "That spawnpoint was just created!\nCan link in " .. untilTime .. " seconds." )
+            return
+
+        end
+
         local success = linkPlayerToSpawnPoint( ply, self )
 
         if success then
@@ -281,8 +339,8 @@ function ENT:DoSpawningFX( _ )
     effData:SetScale( 2 )
     util.Effect( "spawnpoint_start", effData )
 
-    self:EmitSound( "npc/scanner/combat_scan2.wav", 78, math.random( 110, 140 ), 1, CHAN_STATIC )
-    self:EmitSound( "items/medshot4.wav", 75, math.random( 120, 130 ), 1, CHAN_ITEM )
+    self:EmitSound( "npc/scanner/combat_scan2.wav", 72, math.random( 110, 140 ), 1, CHAN_STATIC )
+    self:EmitSound( "items/medshot4.wav", 72, math.random( 120, 130 ), 1, CHAN_ITEM )
 
 end
 

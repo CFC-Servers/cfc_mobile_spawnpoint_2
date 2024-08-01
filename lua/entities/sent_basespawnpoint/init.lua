@@ -14,7 +14,7 @@ local defaultInterferenceDist = 2000
 local desc = "Distance that shielded base spawnpoints, interfere with other spawnpoints, -1 for default (" .. tostring( defaultInterferenceDist ) .. ")"
 
 local baseInterferenceVar = CreateConVar( "cfc_basespawn_interferedist", -1, FCVAR_ARCHIVE, desc )
-function interferenceDist()
+local function interferenceDist()
     local var = baseInterferenceVar:GetInt()
     if var <= -1 then
         return defaultInterferenceDist
@@ -29,7 +29,7 @@ local defaultMaxShieldHealth = 50000
 desc = "Max shield health of the base_spawnpoint, -1 for default (" .. tostring( defaultMaxShieldHealth ) .. ")"
 
 local baseShieldHealthVar = CreateConVar( "cfc_basespawn_shieldhealth", -1, FCVAR_ARCHIVE, desc )
-function maxShieldHealth()
+local function maxShieldHealth()
     local var = baseShieldHealthVar:GetInt()
     if var <= -1 then
         return defaultMaxShieldHealth
@@ -44,7 +44,7 @@ local defaultShieldRegen = 1000
 desc = "How much shield health does the base_spawnpoint regen, per second? -1 for default (" .. tostring( defaultShieldRegen ) .. ")"
 
 local baseShieldRegenVar = CreateConVar( "cfc_basespawn_shieldregen", -1, FCVAR_ARCHIVE, desc )
-function shieldRegen()
+local function shieldRegen()
     local var = baseShieldRegenVar:GetInt()
     if var <= -1 then
         return defaultShieldRegen
@@ -59,7 +59,7 @@ local defaultShapedShieldDamage = maxShieldHealth() * 0.6
 desc = "base_spawnpoint shield damage, dealt by the Shaped Charge. -1 for default (" .. tostring( defaultShapedShieldDamage ) .. ")"
 
 local shapedShieldDamageVar = CreateConVar( "cfc_basespawn_shapedshielddamage", -1, FCVAR_ARCHIVE, desc )
-function shapedShieldDamage()
+local function shapedShieldDamage()
     local var = shapedShieldDamageVar:GetInt()
     if var <= -1 then
         return defaultShapedShieldDamage
@@ -73,7 +73,7 @@ end
 local CurTime = CurTime
 
 ENT.IllegalToPickup = true
-ENT.SpawningHealth = 400
+ENT.SpawningHealth = 400 -- same as normal spawn
 ENT.MaxHealth = ENT.SpawningHealth
 ENT.MaxShieldHealth = maxShieldHealth()
 ENT.ShieldHealthRegen = shieldRegen()
