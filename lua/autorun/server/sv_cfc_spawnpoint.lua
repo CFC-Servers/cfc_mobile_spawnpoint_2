@@ -23,18 +23,6 @@ local bannedTools = CFC_SpawnPoints.BANNED_TOOLS
 local heightOfSpawnPointPlusOne = 16
 
 
------ PRIVATE FUNCTIONS -----
-
-local function createPlayerList( players )
-    local playerList = {}
-    for _, ply in pairs( players ) do
-        playerList[ply] = true
-    end
-
-    return playerList
-end
-
-
 ----- SETUP -----
 
 hook.Add( "PlayerSpawn", "SpawnPointHook", function( ply )
@@ -111,8 +99,6 @@ hook.Add( "PlayerSay", "UnlinkThisSpawnPointCommand", function( ply, txt )
         return
     end
 
-    local excludedPlayers = createPlayerList( { owner } )
-
-    spawnPoint:UnlinkAllPlayers( excludedPlayers )
+    spawnPoint:UnlinkAllPlayersExcept( { [owner] = true } )
     ply:PrintMessage( 4, "All players except the owner have been unlinked from this Spawn Point" )
 end )

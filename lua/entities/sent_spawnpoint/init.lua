@@ -110,19 +110,22 @@ function ENT:UnlinkPlayer( ply )
     self.LinkedPlayers[ply] = nil
 end
 
-function ENT:UnlinkAllPlayers( excludedPlayers )
-    local linkedPlayers = self.LinkedPlayers
-    local owner = self:CPPIGetOwner()
-
-    for ply, _ in pairs( linkedPlayers ) do
+function ENT:UnlinkAllPlayers()
+    for ply, _ in pairs( self.LinkedPlayers ) do
         if IsValid( ply ) then
-            local playerIsNotExcluded = excludedPlayers[ply] == nil
-            local playerIsNotOwner = owner ~= ply
+            self:UnlinkPlayer( ply )
+            ply:PrintMessage( 4, "You've been unlinked from a Spawn Point!" )
+        end
+    end
+end
 
-            if playerIsNotExcluded and playerIsNotOwner then
-               self:UnlinkPlayer( ply )
-               ply:PrintMessage( 4, "You've been unlinked from a Spawn Point!" )
-            end
+function ENT:UnlinkAllPlayersExcept( excludedPlayers )
+    excludedPlayers = excludedPlayers or {}
+
+    for ply, _ in pairs( self.LinkedPlayers ) do
+        if IsValid( ply ) and not excludedPlayers[ply] then
+            self:UnlinkPlayer( ply )
+            ply:PrintMessage( 4, "You've been unlinked from a Spawn Point!" )
         end
     end
 end
