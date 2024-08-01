@@ -73,7 +73,7 @@ function ENT:OnRemove()
     eff:SetOrigin( self:GetPos() )
     util.Effect( "spawnpoint_start", eff, true, true )
 
-    self:UnlinkAllPlayers( {} )
+    self:UnlinkAllPlayers()
 end
 
 function ENT:Use( ply )
