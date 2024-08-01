@@ -102,6 +102,19 @@ function ENT:Initialize()
 end
 
 function ENT:OnRemove()
+    local atLeastOneLinked = false
+
+    for ply in pairs( self._linkedPlayers ) do
+        if IsValid( ply ) then
+            atLeastOneLinked = true
+            break
+        end
+    end
+
+    if atLeastOneLinked then
+        self:EmitSound( "npc/roller/mine/rmine_blades_out2.wav", 90, 90 )
+    end
+
     doPointEffect( self, EFF_REMOVE_COLOR_ANG )
     self:UnlinkAllPlayers()
 end
