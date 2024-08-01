@@ -2,6 +2,20 @@ AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 include( "shared.lua" )
 
+ENT.IllegalToPickup = false
+ENT.SpawningHealth = 400 -- two crossbow bolts
+ENT.MaxHealth = ENT.SpawningHealth
+ENT.PlayerSpawnOffset = Vector( 0, 0, 0 )
+ENT.PlayerSpawnOffsetWorld = Vector( 0, 0, 16 )
+ENT.SpawnpointFxOffset = Vector( 0, 0, 0 )
+
+ENT.LegalMass = 100
+ENT.LegalMaxs = Vector( 5, 5, 2 )
+
+ENT.SpawnpointModel = "models/props_combine/combine_mine01.mdl"
+
+local HUD_PRINTCENTER = HUD_PRINTCENTER
+
 -- Chat command config
 spawnPointCommands = {
     ["unlinkSpawnPoint"] = {
@@ -13,6 +27,17 @@ spawnPointCommands = {
     }
 }
 
+local function miniSpark( pos, scale )
+    local effectdata = EffectData()
+    effectdata:SetOrigin( pos )
+    effectdata:SetNormal( VectorRand() )
+    effectdata:SetMagnitude( 3 * scale ) --amount and shoot hardness
+    effectdata:SetScale( 1 * scale ) --length of strands
+    effectdata:SetRadius( 3 * scale ) --thickness of strands
+    util.Effect( "Sparks", effectdata )
+
+end
+
 -- Helper Functions
 function createPlayerList( players )
     local playerList = {}
@@ -23,28 +48,12 @@ function createPlayerList( players )
     return playerList
 end
 
-local function isInSameFaction( ply, otherPly )
-    return false -- TODO: Remove this functionality altogether
-end
-
 local function isFriendly( ply, otherPly )
     if ply == otherPly then return true end
-    if isInSameFaction( ply, otherPly ) then return true  end
 
     local friends = ply:CPPIGetFriends()
     if friends == CPPI.CPPI_DEFER then return false end
     return table.HasValue( friends, otherPly )
-end
-
-function linkPlayerToSpawnPoint( ply, spawnPoint )
-    if not IsValid( ply ) then return end
-    if not IsValid( spawnPoint ) then return end
-    if not isFriendly( ply, spawnPoint:CPPIGetOwner() ) then return end
-
-    ply.LinkedSpawnPoint = spawnPoint
-    spawnPoint.LinkedPlayers[ply] = "Linked"
-
-    return true
 end
 
 function unlinkPlayerFromSpawnPoint( ply, spawnPoint )
@@ -53,23 +62,50 @@ function unlinkPlayerFromSpawnPoint( ply, spawnPoint )
 
     ply.LinkedSpawnPoint = nil
     spawnPoint.LinkedPlayers[ply] = nil
+    spawnPoint:DoQuietSound( "npc/roller/code2.wav" )
+
 end
 
-function unlinkAllPlayersFromSpawnPoint( spawnPoint, excludedPlayers )
+function linkPlayerToSpawnPoint( ply, spawnPoint )
+    if not IsValid( ply ) then return end
+    if not IsValid( spawnPoint ) then return end
+    if not isFriendly( spawnPoint:CPPIGetOwner(), ply ) then return end
+    if IsValid( ply.LinkedSpawnPoint ) then
+        unlinkPlayerFromSpawnPoint( ply, ply.LinkedSpawnPoint )
+
+    end
+
+    ply.LinkedSpawnPoint = spawnPoint
+    spawnPoint.LinkedPlayers[ply] = "Linked"
+
+    return true
+end
+
+function unlinkAllPlayersFromSpawnPoint( spawnPoint, excludedPlayers, reason )
     if not IsValid( spawnPoint ) then return end
 
+    reason = reason or "You've been unlinked from a Spawn Point!"
     local linkedPlayers = spawnPoint.LinkedPlayers
-    local spawnPointOwner = spawnPoint:CPPIGetOwner()
 
     for ply, _ in pairs( linkedPlayers ) do
         if IsValid( ply ) then
             local playerIsNotExcluded = excludedPlayers[ply] == nil
-            local playerIsNotSpawnPointOwner = spawnPointOwner ~= ply
 
-            if playerIsNotExcluded and playerIsNotSpawnPointOwner then
+            if playerIsNotExcluded then
                unlinkPlayerFromSpawnPoint( ply, spawnPoint )
-               ply:PrintMessage( 4, "You've been unlinked from a Spawn Point!" )
+               ply:PrintMessage( HUD_PRINTCENTER, reason )
             end
+        end
+    end
+end
+
+local function displayMessageToAllSpawners( spawnPoint, message )
+    if not IsValid( spawnPoint ) then return end
+    local linkedPlayers = spawnPoint.LinkedPlayers
+
+    for ply, _ in pairs( linkedPlayers ) do
+        if IsValid( ply ) then
+            ply:PrintMessage( HUD_PRINTCENTER, message )
         end
     end
 end
@@ -106,7 +142,7 @@ function unlinkThisSpawnPointCommand( ply, txt, _, _ )
     local playerOwnsSpawnPoint = spawnPointOwner == ply
     local playerIsAdmin = ply:IsAdmin()
 
-    if not ( playerOwnsSpawnPoint or playerIsAdmin ) then return ply:PrintMessage( 4, "That's not yours! You can't unlink others from this Spawn Point" ) end
+    if not ( playerOwnsSpawnPoint or playerIsAdmin ) then return ply:PrintMessage( 4, "That's not yours! you can't usenlink others from this Spawn Point" ) end
 
     local excludedPlayers = createPlayerList( { spawnPointOwner } )
 
@@ -128,23 +164,36 @@ hook.Remove( "PlayerDisconnected", "UnlinkPlayerOnDisconnect" )
 hook.Add( "PlayerDisconnected", "UnlinkPlayerOnDisconnect", unlinkPlayerOnDisconnect )
 
 -- Entity Methods
-function ENT:SpawnFunction( _, tr )
+function ENT:SpawnFunction( spawner, tr )
     if not tr.Hit then return end
-    local SpawnPos = tr.HitPos
+    local spawnPos = tr.HitPos
+    local spawnAng = Angle( 0, spawner:EyeAngles().y, 0 )
     local ent = ents.Create( "sent_spawnpoint" )
-    ent:SetPos( SpawnPos )
+    ent:SetPos( spawnPos + -tr.HitNormal )
+    ent:SetAngles( spawnAng )
     ent:Spawn()
     ent:Activate()
 
     return ent
 end
 
-function ENT:Initialize()
-    local effectdata1 = EffectData()
-    effectdata1:SetOrigin( self:GetPos() )
-    util.Effect( "spawnpoint_start", effectdata1, true, true )
+function ENT:ResetData()
+    self:SetSpawnpointEnabled( self.SpawnsActive )
+    self:SetShielded( false )
+    self:SetShieldHealth( 0 )
 
-    self:SetModel( "models/props_combine/combine_mine01.mdl" )
+end
+
+function ENT:Initialize()
+    self:ResetData()
+
+    self.SpawnpointHealth = self.SpawningHealth
+    self.nextDamageWhine = 0
+    self.nextLinkedFX = 0
+
+    self:SetTrigger( true )
+
+    self:SetModel( self.SpawnpointModel )
     self:PhysicsInit( SOLID_VPHYSICS )
     self:SetMoveType( MOVETYPE_VPHYSICS )
     self:SetSolid( SOLID_VPHYSICS )
@@ -152,65 +201,348 @@ function ENT:Initialize()
     self.LinkedPlayers = {}
 
     local phys = self:GetPhysicsObject()
-    if not phys:IsValid() then return end
+    if IsValid( phys ) then
+        phys:Wake()
+        phys:EnableDrag( true )
+        phys:EnableMotion( false )
 
-    phys:Wake()
-    phys:EnableDrag( true )
-    phys:EnableMotion( false )
+    end
+
+    self:SpawnpointPostInitialize()
+
+    local effData = EffectData()
+    effData:SetOrigin( self:LocalToWorld( self.SpawnpointFxOffset ) )
+    effData:SetScale( 0.5 )
+    util.Effect( "spawnpoint_start", effData )
+
+    self:MakeLegal()
+
 end
 
 function ENT:OnRemove()
-    local effectdata1 = EffectData()
-    effectdata1:SetOrigin( self:GetPos() )
-    util.Effect( "spawnpoint_start", effectdata1, true, true )
+    local effData = EffectData()
+    effData:SetOrigin( self:LocalToWorld( self.SpawnpointFxOffset ) )
+    effData:SetScale( 1 )
+    util.Effect( "spawnpoint_start", effData )
 
-    unlinkAllPlayersFromSpawnPoint( self, {} )
+    self:OnSpawnRemoved()
+
+    local message = "Your linked spawnpoint was removed"
+    if self.spawnpointBroken then
+        message = "Your linked spawnpoint died"
+
+    end
+
+    unlinkAllPlayersFromSpawnPoint( self, {}, message )
+end
+
+function ENT:SpawnpointMassCenter()
+    local obj = self:GetPhysicsObject()
+    if not IsValid( obj ) then return self:WorldSpaceCenter() end
+    return self:LocalToWorld( obj:GetMassCenter() )
+
 end
 
 function ENT:Use( ply )
+    self:TryToLink( ply )
+
+end
+
+function ENT:TryToLink( ply )
+    if not IsValid( ply ) then return end
+    if not ply:IsPlayer() then return end
+
+    if not self:GetSpawnpointEnabled() then
+        self:DoQuietSound( "npc/roller/code2.wav" )
+        return
+
+    end
+    self.nextLinkedFX = CurTime() + 5
+
+    timer.Simple( 0, function()
+        if not IsValid( self ) then return end
+        local effData = EffectData()
+        effData:SetOrigin( self:LocalToWorld( self.SpawnpointFxOffset ) )
+        effData:SetScale( 0.5 )
+        util.Effect( "spawnpoint_start", effData )
+
+    end )
+
     local playerLinkedToSpawnPoint = ply.LinkedSpawnPoint == self
 
-    if playerLinkedToSpawnPoint then
+    if playerLinkedToSpawnPoint and not enableOnly then
         unlinkPlayerFromSpawnPoint( ply, self )
-        ply:PrintMessage( 4, "Spawn Point unlinked" )
-    else
+        ply:PrintMessage( HUD_PRINTCENTER, "Spawn Point unlinked" )
+    elseif not playerLinkedToSpawnPoint then
         local success = linkPlayerToSpawnPoint( ply, self )
 
         if success then
-            ply:PrintMessage( 4, "Spawn Point set. Say !unlinkspawn to unlink" )
-        else
-            ply:PrintMessage( 4, "Unable to set spawnpoint. You are not in the friends or in same faction with the owner.")
+            if not self.SetupFirstTime then
+                self.SetupFirstTime = true
+                self:DoFirstTimeSetupFX( ply )
+
+            end
+            self:DoQuietSound( "npc/roller/remote_yes.wav" )
+            ply:PrintMessage( HUD_PRINTCENTER, "Spawn Point set. Say !unlinkspawn to unlink" )
+
+        elseif not enableOnly then
+            self:DoQuietSound( "npc/roller/code2.wav" )
+            ply:PrintMessage( HUD_PRINTCENTER, "Unable to set spawnpoint. You are not buddied with the owner." )
+
         end
     end
 end
 
-local heightOfSpawnPointPlusOne = 16
+-- where respawned players are placed
+function ENT:RespawnPos()
+    return self:LocalToWorld( self.PlayerSpawnOffset ) + self.PlayerSpawnOffsetWorld
+
+end
+
 local function SpawnPointHook( ply )
     local spawnPoint = ply.LinkedSpawnPoint
     if not spawnPoint or not spawnPoint:IsValid() then return end
-    if not spawnPoint:IsInWorld() then
-        ply:ChatPrint( "Your linked spawn point is in an invalid location" )
-        return
-    end
+    if spawnPoint:IsIllegal() then return end
 
-    local spawnPos = spawnPoint:GetPos() + Vector( 0, 0, heightOfSpawnPointPlusOne )
+    local spawnPos = spawnPoint:RespawnPos()
     ply:SetPos( spawnPos )
+
+    spawnPoint:DoSpawningFX( ply )
+    spawnPoint.nextLinkedFX = CurTime() + 5
+
 end
+
 hook.Remove( "PlayerSpawn", "SpawnPointHook" )
 hook.Add( "PlayerSpawn", "SpawnPointHook", SpawnPointHook )
 
-local function unlinkSpawnpointWhenEnteringPvp( ply )
-    if not IsValid( ply.LinkedSpawnPoint ) then return end
-    local linkedSpawnPoint = ply.LinkedSpawnPoint
-    unlinkPlayerFromSpawnPoint( ply, linkedSpawnPoint )
-    ply:ChatPrint( "You've been unlinked from a Spawn Point, because you entered PvP!" )
+-- play a really obvious sound the first time someone sets their spawn as me
+function ENT:DoFirstTimeSetupFX( _ )
+    -- ignore PAS
+    local filterAllPlayers = RecipientFilter()
+    filterAllPlayers:AddAllPlayers()
+    self:EmitSound( "npc/roller/mine/combine_mine_deactivate1.wav", 80, math.random( 110, 120 ), 1, CHAN_STATIC, nil, nil, filterAllPlayers )
+
+end
+
+function ENT:DoSpawningFX( _ )
+    local effData = EffectData()
+    effData:SetOrigin( self:LocalToWorld( self.SpawnpointFxOffset ) )
+    effData:SetScale( 2 )
+    util.Effect( "spawnpoint_start", effData )
+
+    self:EmitSound( "npc/scanner/combat_scan2.wav", 78, math.random( 110, 140 ), 1, CHAN_STATIC )
+    self:EmitSound( "items/medshot4.wav", 75, math.random( 120, 130 ), 1, CHAN_ITEM )
+
+end
+
+function ENT:DoBreakFX()
+    local breakPos = self:SpawnpointMassCenter()
+    for _ = 1, 6 do
+        miniSpark( breakPos, math.Rand( 0.5, 1.5 ) )
+
+    end
+
+    util.BlastDamage( self, self, breakPos, 120, 5 )
+
+    self:EmitSound( "ambient/fire/gascan_ignite1.wav", 80, math.random( 90, 100 ), 1, CHAN_STATIC )
+    self:EmitSound( "npc/scanner/cbot_energyexplosion1.wav", 80, math.random( 120, 130 ), 1, CHAN_STATIC )
+
+end
+
+function ENT:DoQuietSound( path )
+    timer.Simple( 0, function()
+        if not IsValid( self ) then return end
+        self:EmitSound( path, 70, math.Rand( 110, 120 ), 1, CHAN_ITEM )
+
+    end )
+end
+
+local mobileLegalMassVar = CreateConVar( "cfc_mobilespawn_mass", -1, FCVAR_ARCHIVE, "The mass of the mobile spawnpoint, -1 for default ( 100 )" )
+function ENT:MyLegalMass()
+    local var = mobileLegalMassVar:GetInt()
+    if var <= -1 then
+        return self.LegalMass
+
+    else
+        return var
+
+    end
+end
+
+local legalMaterial = ""
+local legalColor = Color( 255, 255, 255, 255 )
+
+function ENT:MakeLegal()
+    self:SetMaterial( legalMaterial )
+    self:SetColor( legalColor )
+    self:SetCollisionGroup( COLLISION_GROUP_NONE )
+    self:SetNotSolid( false )
+    local obj = self:GetPhysicsObject()
+    if IsValid( obj ) then
+        obj:SetMass( self:MyLegalMass() )
+
+    end
+end
+
+function ENT:IsIllegal()
+    local myMat = self:GetMaterial()
+    if myMat ~= legalMaterial then
+        return true, true, "It's material was changed."
+
+    end
+    local myColor = self:GetColor()
+    if myColor ~= legalColor then
+        return true, true, "It's color was changed."
+
+    end
+    local pickedUp = self:IsPlayerHolding()
+    if pickedUp and self.IllegalToPickup then
+        return true, true, "It was picked up."
+
+    end
+
+    local hasParent = IsValid( self:GetParent() )
+    if hasParent then
+        return true, true, "It was parented to something."
+
+    end
+
+    local illegalCollisions = self:GetCollisionGroup() ~= COLLISION_GROUP_NONE
+    if illegalCollisions then
+        return true, true, "It's collisions were disabled."
+
+    end
+    if not self:IsSolid() then
+        return true, true, "It was made non-solid."
+
+    end
+
+    local obj = self:GetPhysicsObject()
+    local illegalMass = IsValid( obj ) and obj:GetMass() ~= self:MyLegalMass() and not pickedUp
+    if illegalMass then
+        return true, true, "It's mass was changed."
+
+    end
+
+    local legalCheckPos = self:SpawnpointMassCenter()
+
+    local legalTraceCheck = {
+        start = legalCheckPos,
+        endpos = legalCheckPos,
+        filter = self,
+        collisiongroup = self:GetCollisionGroup(),
+        maxs = self.LegalMaxs,
+        mins = -self.LegalMaxs,
+    }
+    local legalTrace = util.TraceHull( legalTraceCheck )
+    if legalTrace.Hit or legalTrace.StartSolid then
+        if legalTrace.HitWorld then
+            return true, true, "It was inside/intersecting the world."
+
+        elseif legalTrace.Entity then
+            local blocker = legalTrace.Entity
+            local blockersObj = blocker:GetPhysicsObject()
+            local canIgnore = blocker:IsPlayer()
+            if not canIgnore and IsValid( blockersObj ) and blockersObj:GetMass() <= self:MyLegalMass() then
+                canIgnore = true
+
+            end
+            if not canIgnore and blocker:IsPlayerHolding() then
+                canIgnore = true
+
+            end
+            if not canIgnore then
+                return true, false, "It was inside/intersecting an entity."
+
+            end
+        end
+    end
+end
+
+function ENT:Think()
+    local is, doUnlink, reason = self:IsIllegal()
+    if is then
+        self:MakeLegal()
+        if doUnlink then
+            unlinkAllPlayersFromSpawnPoint( self, {}, "You've been disconnected from your spawnpoint because...\n" .. reason )
+
+        else
+            displayMessageToAllSpawners( self, "You won't respawn at your spawnpoint because...\n" .. reason )
+
+        end
+    end
+    if self.nextLinkedFX < CurTime() then
+        self.nextLinkedFX = CurTime() + math.random( 5, 10 )
+        if table.Count( self.LinkedPlayers ) >= 1 then
+            local effData = EffectData()
+            effData:SetOrigin( self:LocalToWorld( self.SpawnpointFxOffset ) )
+            effData:SetScale( 0.5 )
+            util.Effect( "spawnpoint_start", effData )
+
+        end
+    end
+    self:SpawnpointThink()
+    self:NextThink( CurTime() + 1 )
+    return true
+
+end
+
+function ENT:Break()
+    if self.spawnpointBroken then return end
+    self.spawnpointBroken = true
+    self:DoBreakFX()
+    SafeRemoveEntity( self )
+
+end
+
+function ENT:OnTakeDamage( dmg )
+
+    if self.spawnpointBroken then return end
+    self:TakePhysicsDamage( dmg )
+
+    if self:SpawnpointPreTakeDamage( dmg ) then return end
+
+    local damage = dmg:GetDamage()
+    self.SpawnpointHealth = self.SpawnpointHealth - damage
+
+    local sparkPos = self:SpawnpointMassCenter()
+    timer.Simple( 0, function()
+        miniSpark( sparkPos, 1 )
+
+    end )
+
+    if self.SpawnpointHealth <= 0 then
+        self:Break()
+        return
+
+    else
+        if self.nextDamageWhine < CurTime() then
+            self.nextDamageWhine = CurTime() + 0.75
+            self:EmitSound( "npc/roller/mine/rmine_blip3.wav", 78, math.random( 110, 120 ), 1, CHAN_STATIC )
+
+        end
+        local pitch = math.random( 110, 120 ) + ( -damage / 4 )
+        self:EmitSound( "Computer.BulletImpact" )
+        self:EmitSound( "physics/metal/metal_canister_impact_hard" .. math.random( 1, 3 ) .. ".wav", 75, pitch, 1, CHAN_STATIC )
+
+    end
+end
+
+-- take no acf damage when we're above half health
+function ENT:ACF_PreDamage()
+    if self.SpawnpointHealth > ( self.MaxHealth / 2 ) then return false end
+
 end
 
 -- Stubs from here on
 
-function ENT:Think() end
+function ENT:SpawnpointPreTakeDamage() end
 
-function ENT:OnTakeDamage() end
+function ENT:SpawnpointPostInitialize() end
+
+function ENT:SpawnpointThink() end
+
+function ENT:OnSpawnRemoved() end
 
 function ENT:PhysicsUpdate() end
 
