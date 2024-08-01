@@ -4,7 +4,6 @@ local CurTime = CurTime
 
 function ENT:Initialize()
     self.shieldSetupTime = CurTime() + self.ShieldSetupTime
-    self.spawningSetupTime = CurTime() + self.SpawnSetupTime
 end
 
 function ENT:OnRemove()
@@ -52,7 +51,6 @@ function ENT:DrawTranslucent()
         surface.SetFont( "CreditsText" )
         surface.SetTextColor( color_hud )
 
-        local yOffs = 0
         local text1 = ""
         if not self.shieldSetup then
             local shieldTimeLeft = self.shieldSetupTime - CurTime()
@@ -64,22 +62,10 @@ function ENT:DrawTranslucent()
 
         end
 
-        local width, height = surface.GetTextSize( text1 )
+        local width = surface.GetTextSize( text1 )
         surface.SetTextPos( toScreen.x - width / 2, toScreen.y )
         surface.DrawText( text1 )
 
-        yOffs = yOffs + height / 2
-
-        if not self.spawningEnabled then
-            local spawningTimeLeft = self.spawningSetupTime - CurTime()
-            spawningTimeLeft = math_Round( spawningTimeLeft, 1 )
-            local text2 = "Spawning: " .. tostring( spawningTimeLeft )
-
-            width = surface.GetTextSize( text2 )
-            surface.SetTextPos( toScreen.x - width / 2, toScreen.y + yOffs )
-            surface.DrawText( text2 )
-
-        end
     cam.End2D()
 end
 
@@ -146,12 +132,6 @@ function ENT:Think()
 
         end
     end
-    if self.spawningSetupTime < cur and not self.spawningEnabled then
-        self.spawningEnabled = true
-        self.Model2:SetSkin( 0 )
-        self.Model3:SetNoDraw( false )
-
-    end
 
     self:SetNextClientThink( cur + 0.25 )
     return true
@@ -178,16 +158,9 @@ function ENT:DoDetails()
         self.Model2.vecOffset = model2Offset
         self.Model2.angOffset = model2AngOffset
 
-        local theSkin = 1
-        if self:GetSpawnpointEnabled() then
-            theSkin = 0
-
-        end
-
         self.Model2:SetPos( self:LocalToWorld( self.Model2.vecOffset ) )
         self.Model2:SetAngles( self:LocalToWorldAngles( self.Model2.angOffset ) )
         self.Model2:SetModelScale( 0.75, 0 )
-        self.Model2:SetSkin( theSkin )
         self.Model2:SetParent( self )
 
     end
@@ -203,8 +176,6 @@ function ENT:DoDetails()
         self.Model3:SetRenderMode( RENDERMODE_TRANSADD )
         self.Model3:SetColor( Color( 255, 255, 255, 100 ) )
         self.Model3:SetRenderFX( 16 ) --kRenderFxHologram
-
-        self.Model3:SetNoDraw( not self:GetSpawnpointEnabled() )
 
     end
     self.Models = { self.Model1, self.Model2, self.Model3 }

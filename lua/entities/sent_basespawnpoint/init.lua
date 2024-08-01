@@ -11,7 +11,7 @@ local function allPlayersRecipientFilter()
 end
 
 local defaultInterferenceDist = 2000
-local desc = "Distance that shielded base spawnpoints, interfere with other spawnpoints, -1 for default (" .. tostring( defaultInterferenceDist ).. ")"
+local desc = "Distance that shielded base spawnpoints, interfere with other spawnpoints, -1 for default (" .. tostring( defaultInterferenceDist ) .. ")"
 
 local baseInterferenceVar = CreateConVar( "cfc_basespawn_interferedist", -1, FCVAR_ARCHIVE, desc )
 function interferenceDist()
@@ -26,7 +26,7 @@ function interferenceDist()
 end
 
 local defaultMaxShieldHealth = 50000
-desc = "Max shield health of the base_spawnpoint, -1 for default (" .. tostring( defaultMaxShieldHealth ).. ")"
+desc = "Max shield health of the base_spawnpoint, -1 for default (" .. tostring( defaultMaxShieldHealth ) .. ")"
 
 local baseShieldHealthVar = CreateConVar( "cfc_basespawn_shieldhealth", -1, FCVAR_ARCHIVE, desc )
 function maxShieldHealth()
@@ -107,12 +107,6 @@ function ENT:SpawnpointPostInitialize()
     timer.Simple( 1, function()
         if not IsValid( self ) then return end
         self:EmitSound( "ambient/levels/labs/machine_stop1.wav", 100, math.random( 160, 180 ), 1, CHAN_STATIC, nil, nil, allPlayersRecipientFilter() )
-
-    end )
-    timer.Simple( self.SpawnSetupTime, function()
-        if not IsValid( self ) then return end
-        self:EmitSound( "ambient/machines/combine_terminal_idle1.wav", 70, 100, 1, CHAN_STATIC )
-        self:SetSpawnpointEnabled( true )
 
     end )
 end

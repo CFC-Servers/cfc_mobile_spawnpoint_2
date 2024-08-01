@@ -16,17 +16,6 @@ ENT.SpawnpointModel = "models/props_combine/combine_mine01.mdl"
 
 local HUD_PRINTCENTER = HUD_PRINTCENTER
 
--- Chat command config
-spawnPointCommands = {
-    ["unlinkSpawnPoint"] = {
-        ["!unlinkspawn"] = true,
-        ["!unlinkspawnpoint"] = true
-    },
-    ["unlinkThisSpawnPoint"] = {
-        ["!unlinkthis"] = true
-    }
-}
-
 local function miniSpark( pos, scale )
     local effectdata = EffectData()
     effectdata:SetOrigin( pos )
@@ -110,49 +99,6 @@ local function displayMessageToAllSpawners( spawnPoint, message )
     end
 end
 
--- Chat commands
-function unlinkSpawnPointCommand( ply, txt, _, _ )
-    -- Removes whitepace from text
-    local text = string.lower( txt ):gsub( "%s+", "" )
-    local unlinkSpawnCommands = spawnPointCommands.unlinkSpawnPoint
-
-    if not unlinkSpawnCommands[text] then return end
-
-    local linkedSpawnPoint = ply.LinkedSpawnPoint
-    unlinkPlayerFromSpawnPoint( ply, linkedSpawnPoint )
-    ply:PrintMessage( 4, "Spawn Point unlinked" )
-end
-hook.Remove( "PlayerSay", "UnlinkSpawnPointCommand" )
-hook.Add( "PlayerSay", "UnlinkSpawnPointCommand", unlinkSpawnPointCommand )
-
-function unlinkThisSpawnPointCommand( ply, txt, _, _ )
-    local text = string.lower( txt ):gsub( "%s+", "" )
-    local unlinkThisSpawnCommands = spawnPointCommands.unlinkThisSpawnPoint
-
-    if not unlinkThisSpawnCommands[text] then return end
-
-    local targetedEntity = ply:GetEyeTraceNoCursor().Entity
-    if not ( targetedEntity and targetedEntity:IsValid() ) then return end
-
-    local isSpawnPoint = targetedEntity:GetClass() == "sent_spawnpoint"
-    if not isSpawnPoint then return ply:PrintMessage( 4, "You must be looking at a Spawn Point to use this command" ) end
-
-    local spawnPoint = targetedEntity
-    local spawnPointOwner = spawnPoint:CPPIGetOwner()
-    local playerOwnsSpawnPoint = spawnPointOwner == ply
-    local playerIsAdmin = ply:IsAdmin()
-
-    if not ( playerOwnsSpawnPoint or playerIsAdmin ) then return ply:PrintMessage( 4, "That's not yours! you can't usenlink others from this Spawn Point" ) end
-
-    local excludedPlayers = createPlayerList( { spawnPointOwner } )
-
-    unlinkAllPlayersFromSpawnPoint( spawnPoint, excludedPlayers )
-    ply:PrintMessage( 4, "All players except the owner have been unlinked from this Spawn Point" )
-end
-
-hook.Remove( "PlayerSay", "UnlinkThisSpawnPointCommand" )
-hook.Add( "PlayerSay", "UnlinkThisSpawnPointCommand", unlinkThisSpawnPointCommand )
-
 
 local function unlinkPlayerOnDisconnect( ply )
     local linkedSpawnPoint = ply.LinkedSpawnPoint
@@ -162,6 +108,7 @@ local function unlinkPlayerOnDisconnect( ply )
 end
 hook.Remove( "PlayerDisconnected", "UnlinkPlayerOnDisconnect" )
 hook.Add( "PlayerDisconnected", "UnlinkPlayerOnDisconnect", unlinkPlayerOnDisconnect )
+
 
 -- Entity Methods
 function ENT:SpawnFunction( spawner, tr )
@@ -178,7 +125,6 @@ function ENT:SpawnFunction( spawner, tr )
 end
 
 function ENT:ResetData()
-    self:SetSpawnpointEnabled( self.SpawnsActive )
     self:SetShielded( false )
     self:SetShieldHealth( 0 )
 
@@ -252,11 +198,6 @@ function ENT:TryToLink( ply )
     if not IsValid( ply ) then return end
     if not ply:IsPlayer() then return end
 
-    if not self:GetSpawnpointEnabled() then
-        self:DoQuietSound( "npc/roller/code2.wav" )
-        return
-
-    end
     self.nextLinkedFX = CurTime() + 5
 
     timer.Simple( 0, function()
@@ -274,6 +215,13 @@ function ENT:TryToLink( ply )
         unlinkPlayerFromSpawnPoint( ply, self )
         ply:PrintMessage( HUD_PRINTCENTER, "Spawn Point unlinked" )
     elseif not playerLinkedToSpawnPoint then
+        local is, _, reason = self:IsIllegal()
+        if is then
+            self:DoQuietSound( "npc/roller/code2.wav" )
+            ply:PrintMessage( HUD_PRINTCENTER, "Can't link to this because...\n" .. reason )
+            return
+
+        end
         local success = linkPlayerToSpawnPoint( ply, self )
 
         if success then
@@ -283,7 +231,7 @@ function ENT:TryToLink( ply )
 
             end
             self:DoQuietSound( "npc/roller/remote_yes.wav" )
-            ply:PrintMessage( HUD_PRINTCENTER, "Spawn Point set. Say !unlinkspawn to unlink" )
+            ply:PrintMessage( HUD_PRINTCENTER, "Spawn Point set." )
 
         elseif not enableOnly then
             self:DoQuietSound( "npc/roller/code2.wav" )
@@ -397,13 +345,13 @@ function ENT:IsIllegal()
     end
     local pickedUp = self:IsPlayerHolding()
     if pickedUp and self.IllegalToPickup then
-        return true, true, "It was picked up."
+        return true, true, "It's being held."
 
     end
 
     local hasParent = IsValid( self:GetParent() )
     if hasParent then
-        return true, true, "It was parented to something."
+        return true, true, "It's parented to something."
 
     end
 
@@ -437,7 +385,7 @@ function ENT:IsIllegal()
     local legalTrace = util.TraceHull( legalTraceCheck )
     if legalTrace.Hit or legalTrace.StartSolid then
         if legalTrace.HitWorld then
-            return true, true, "It was inside/intersecting the world."
+            return true, true, "It's inside/intersecting the world."
 
         elseif legalTrace.Entity then
             local blocker = legalTrace.Entity
@@ -452,7 +400,7 @@ function ENT:IsIllegal()
 
             end
             if not canIgnore then
-                return true, false, "It was inside/intersecting an entity."
+                return true, false, "It's inside/intersecting an entity."
 
             end
         end
