@@ -1,7 +1,7 @@
 ENT.Type 			= "anim"
 ENT.Base 			= "sent_spawnpoint"
 ENT.PrintName		= "Base Spawnpoint"
-ENT.Author			= "CFC"
+ENT.Author			= "StrawWagen"
 
 ENT.RenderGroup = RENDERGROUP_BOTH
 

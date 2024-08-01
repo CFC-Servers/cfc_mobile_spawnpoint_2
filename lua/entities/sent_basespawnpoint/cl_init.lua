@@ -75,13 +75,14 @@ function ENT:Think()
     if self.shieldSetupTime > cur then
         if not self.settingUpSound1 or not self.settingUpSound1:IsPlaying() then
             self.settingUpSound1 = CreateSound( self, "ambient/levels/labs/machine_moving_loop3.wav" )
-            self.settingUpSound1:SetSoundLevel( 65 )
+            self.settingUpSound1:SetSoundLevel( 75 )
             self.settingUpSound1:Play()
             self.settingUpSound1:ChangePitch( 120, self.ShieldSetupTime )
 
         end
         if not self.settingUpSound2 or not self.settingUpSound2:IsPlaying() then
             self.settingUpSound2 = CreateSound( self, "npc/scanner/scanner_combat_loop1.wav" )
+            self.settingUpSound1:SetSoundLevel( 85 )
             self.settingUpSound2:PlayEx( 1, 80 )
             self.settingUpSound2:ChangePitch( 110, self.ShieldSetupTime )
 
