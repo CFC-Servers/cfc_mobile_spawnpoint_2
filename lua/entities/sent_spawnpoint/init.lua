@@ -27,22 +27,23 @@ local function miniSpark( pos, scale )
 
 end
 
--- Helper Functions
-function createPlayerList( players )
-    local playerList = {}
-    for _, ply in pairs( players ) do
-        playerList[ply] = true
-    end
-
-    return playerList
-end
-
 local function isFriendly( ply, otherPly )
     if ply == otherPly then return true end
 
-    local friends = ply:CPPIGetFriends()
-    if friends == CPPI.CPPI_DEFER then return false end
-    return table.HasValue( friends, otherPly )
+    -- simple player squads
+    if ply.GetSquadID then
+        local plysId = ply:GetSquadID()
+        if plysId ~= -1 then return false end
+
+        local othersId = otherPly:GetSquadID()
+        if othersId ~= -1 then return false end
+
+        if plysId == othersId then return true end
+
+    end
+
+    return false
+
 end
 
 function unlinkPlayerFromSpawnPoint( ply, spawnPoint )
@@ -58,7 +59,7 @@ end
 function linkPlayerToSpawnPoint( ply, spawnPoint )
     if not IsValid( ply ) then return end
     if not IsValid( spawnPoint ) then return end
-    if not isFriendly( spawnPoint:CPPIGetOwner(), ply ) then return end
+    if not isFriendly( spawnPoint:GetCreator(), ply ) then return end
     if IsValid( ply.LinkedSpawnPoint ) then
         unlinkPlayerFromSpawnPoint( ply, ply.LinkedSpawnPoint )
 
@@ -235,7 +236,7 @@ function ENT:TryToLink( ply )
 
         elseif not enableOnly then
             self:DoQuietSound( "npc/roller/code2.wav" )
-            ply:PrintMessage( HUD_PRINTCENTER, "Unable to set spawnpoint. You are not buddied with the owner." )
+            ply:PrintMessage( HUD_PRINTCENTER, "Unable to set spawnpoint. You are not in the same squad as the owner." )
 
         end
     end
@@ -305,18 +306,6 @@ function ENT:DoQuietSound( path )
     end )
 end
 
-local mobileLegalMassVar = CreateConVar( "cfc_mobilespawn_mass", -1, FCVAR_ARCHIVE, "The mass of the mobile spawnpoint, -1 for default ( 100 )" )
-function ENT:MyLegalMass()
-    local var = mobileLegalMassVar:GetInt()
-    if var <= -1 then
-        return self.LegalMass
-
-    else
-        return var
-
-    end
-end
-
 local legalMaterial = ""
 local legalColor = Color( 255, 255, 255, 255 )
 
@@ -327,7 +316,7 @@ function ENT:MakeLegal()
     self:SetNotSolid( false )
     local obj = self:GetPhysicsObject()
     if IsValid( obj ) then
-        obj:SetMass( self:MyLegalMass() )
+        obj:SetMass( self.LegalMass )
 
     end
 end
@@ -366,7 +355,7 @@ function ENT:IsIllegal()
     end
 
     local obj = self:GetPhysicsObject()
-    local illegalMass = IsValid( obj ) and obj:GetMass() ~= self:MyLegalMass() and not pickedUp
+    local illegalMass = IsValid( obj ) and obj:GetMass() ~= self.LegalMass and not pickedUp
     if illegalMass then
         return true, true, "It's mass was changed."
 
@@ -391,7 +380,7 @@ function ENT:IsIllegal()
             local blocker = legalTrace.Entity
             local blockersObj = blocker:GetPhysicsObject()
             local canIgnore = blocker:IsPlayer()
-            if not canIgnore and IsValid( blockersObj ) and blockersObj:GetMass() <= self:MyLegalMass() then
+            if not canIgnore and IsValid( blockersObj ) and blockersObj:GetMass() <= self.LegalMass then
                 canIgnore = true
 
             end
@@ -478,7 +467,7 @@ end
 
 -- take no acf damage when we're above half health
 function ENT:ACF_PreDamage()
-    if self.SpawnpointHealth > ( self.MaxHealth / 2 ) then return false end
+    return false
 
 end
 

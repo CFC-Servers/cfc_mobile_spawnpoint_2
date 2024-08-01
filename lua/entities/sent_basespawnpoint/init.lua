@@ -126,18 +126,6 @@ function ENT:SpawnFunction( spawner, tr )
 
 end
 
-local baseLegalMassVar = CreateConVar( "cfc_basespawn_mass", -1, FCVAR_ARCHIVE, "The mass of the base spawnpoint, -1 for default ( 1000 )" )
-function ENT:MyLegalMass()
-    local var = baseLegalMassVar:GetInt()
-    if var <= -1 then
-        return self.LegalMass
-
-    else
-        return var
-
-    end
-end
-
 local regenerateSounds = {
     "weapons/physcannon/superphys_small_zap1.wav",
     "weapons/physcannon/superphys_small_zap2.wav",
@@ -396,9 +384,4 @@ function ENT:SpawnpointPreTakeDamage( dmg )
 
         return true
     end
-end
-
-function ENT:ACF_PreDamage()
-    if self:GetShielded() then return false end
-
 end
