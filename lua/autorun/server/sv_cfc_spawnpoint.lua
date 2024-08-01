@@ -25,6 +25,7 @@ local bannedTools = CFC_SpawnPoints.BANNED_TOOLS
 local heightOfSpawnPointPlusOne = 16
 
 util.AddNetworkString( "CFC_SpawnPoints_CreationDenied" )
+util.AddNetworkString( "CFC_SpawnPoints_LinkDenySound" )
 
 
 ----- SETUP -----

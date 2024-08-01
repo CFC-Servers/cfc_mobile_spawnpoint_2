@@ -3,13 +3,23 @@ AddCSLuaFile( "shared.lua" )
 include( "shared.lua" )
 
 local COOLDOWN_ON_POINT_SPAWN
+local INTERACT_COOLDOWN
 
 local EFF_SPAWN_COLOR_ANG = Angle( 150, 150, 255 )
 local EFF_COOLDOWN_FINISHED_COLOR_ANG = Angle( 150, 255, 150 )
 local EFF_REMOVE_COLOR_ANG = Angle( 240, 70, 100 )
+local EFF_LINK_COLOR_ANG = Angle( 50, 255, 50 )
+local EFF_UNLINK_COLOR_ANG = Angle( 70, 0, 140 )
 
 
 ----- PRIVATE FUNCTIONS -----
+
+local function doPointEffect( spawnPoint, colorAng )
+    local eff = EffectData()
+    eff:SetOrigin( spawnPoint:GetPos() )
+    eff:SetAngles( colorAng )
+    util.Effect( "spawnpoint_start", eff, true, true )
+end
 
 local function makeSpawnPoint( ply, data )
     local validPly = IsValid( ply )
@@ -60,10 +70,7 @@ function ENT:SpawnFunction( ply, tr )
 end
 
 function ENT:Initialize()
-    local eff = EffectData()
-    eff:SetOrigin( self:GetPos() )
-    eff:SetAngles( EFF_SPAWN_COLOR_ANG )
-    util.Effect( "spawnpoint_start", eff, true, true )
+    doPointEffect( self, EFF_SPAWN_COLOR_ANG )
 
     self:SetModel( "models/props_combine/combine_mine01.mdl" )
     self:PhysicsInit( SOLID_VPHYSICS )
@@ -71,6 +78,7 @@ function ENT:Initialize()
     self:SetSolid( SOLID_VPHYSICS )
     self:SetUseType( SIMPLE_USE )
     self._linkedPlayers = {}
+    self._interactCooldownEndTimes = {}
 
     local phys = self:GetPhysicsObject()
     if phys:IsValid() then
@@ -87,40 +95,56 @@ function ENT:Initialize()
         timer.Simple( cooldown, function()
             if not IsValid( self ) then return end
 
-            local eff2 = EffectData()
-            eff2:SetOrigin( self:GetPos() )
-            eff2:SetAngles( EFF_COOLDOWN_FINISHED_COLOR_ANG )
-            util.Effect( "spawnpoint_start", eff2, true, true )
-
-            self:EmitSound( "npc/roller/remote_yes.wav", 75, 110 )
+            doPointEffect( self, EFF_COOLDOWN_FINISHED_COLOR_ANG )
+            self:EmitSound( "npc/roller/remote_yes.wav", 85, 110 )
         end )
     end
 end
 
 function ENT:OnRemove()
-    local eff = EffectData()
-    eff:SetOrigin( self:GetPos() )
-    eff:SetAngles( EFF_REMOVE_COLOR_ANG )
-    util.Effect( "spawnpoint_start", eff, true, true )
-
+    doPointEffect( self, EFF_REMOVE_COLOR_ANG )
     self:UnlinkAllPlayers()
 end
 
 function ENT:Use( ply )
+    local interactCooldown = INTERACT_COOLDOWN:GetFloat()
+
+    if interactCooldown > 0 then
+        local now = CurTime()
+        local endTimes = self._interactCooldownEndTimes
+        local plyEndTime = endTimes[ply]
+
+        if plyEndTime and plyEndTime > now then return end
+
+        endTimes[ply] = now + interactCooldown
+    end
+
     local isLinked = ply._linkedSpawnPoint == self
 
     if isLinked then
+        -- Unlink
         self:UnlinkPlayer( ply )
+        self:EmitSound( "npc/dog/dog_disappointed.wav", 85, 90 )
+        doPointEffect( self, EFF_UNLINK_COLOR_ANG )
         ply:PrintMessage( 4, "Spawn Point unlinked" )
     else
         local success, failReason = self:LinkPlayer( ply )
 
         if success then
+            -- Link
+            self:EmitSound( "buttons/button17.wav", 85, 90 )
+            doPointEffect( self, EFF_LINK_COLOR_ANG )
             ply:PrintMessage( 4, "Spawn Point set. Say !unlinkspawn to unlink" )
-        elseif failReason then
-            ply:PrintMessage( 4, "Unable to set spawnpoint. " .. failReason )
         else
-            ply:PrintMessage( 4, "Unable to set spawnpoint." )
+            -- Link Failed
+            net.Start( "CFC_SpawnPoints_LinkDenySound" )
+            net.Send( ply )
+
+            if failReason then
+                ply:PrintMessage( 4, "Unable to set spawnpoint. " .. failReason )
+            else
+                ply:PrintMessage( 4, "Unable to set spawnpoint." )
+            end
         end
     end
 end
@@ -190,4 +214,5 @@ duplicator.RegisterEntityClass( "sent_spawnpoint", makeSpawnPoint, "Data" )
 
 hook.Add( "InitPostEntity", "CFC_SpawnPoints_SentSpawnPoint_Setup", function()
     COOLDOWN_ON_POINT_SPAWN = GetConVar( "cfc_spawnpoints_cooldown_on_point_spawn" )
+    INTERACT_COOLDOWN = GetConVar( "cfc_spawnpoints_interact_cooldown" )
 end )
