@@ -22,7 +22,7 @@ function EFFECT:Init( data )
         particle:SetEndSize( 0 )
         particle:SetRoll( math.Rand( 0, 360 ) )
         particle:SetRollDelta( math.Rand( -5.5, 5.5 ) )
-        particle:SetColor( r, b, g )
+        particle:SetColor( r, g, b )
     end
 
     emitter:Finish()
