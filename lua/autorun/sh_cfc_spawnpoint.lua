@@ -1,3 +1,5 @@
+CFC_SpawnPoints = CFC_SpawnPoints or {}
+
 if cleanup then
     cleanup.Register( "sent_spawnpoint" )
 end
