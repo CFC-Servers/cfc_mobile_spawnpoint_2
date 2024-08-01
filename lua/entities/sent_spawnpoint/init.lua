@@ -33,10 +33,12 @@ local function isFriendly( ply, otherPly )
     -- simple player squads
     if ply.GetSquadID then
         local plysId = ply:GetSquadID()
-        if plysId ~= -1 then return false end
+        if plysId == -1 then return false end
 
         local othersId = otherPly:GetSquadID()
-        if othersId ~= -1 then return false end
+        if othersId == -1 then return false end
+
+        print( plysId, othersId )
 
         if plysId == othersId then return true end
 
