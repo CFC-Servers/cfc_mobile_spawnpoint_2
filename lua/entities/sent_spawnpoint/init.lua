@@ -61,8 +61,11 @@ end
 function ENT:SpawnFunction( ply, tr )
     if not tr.Hit then return end
 
+    -- For some unholy reason, not adding this tiny offset makes it spawn 7.594 units higher than it should.
+    local pos = tr.HitPos + Vector( 0, 0, -0.1 )
+
     local ent = makeSpawnPoint( ply, {
-        Pos = tr.HitPos,
+        Pos = pos,
         Angle = Angle( 0, 0, 0 ),
     } )
 
