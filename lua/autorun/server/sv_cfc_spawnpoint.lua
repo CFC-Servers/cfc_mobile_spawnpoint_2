@@ -26,7 +26,7 @@ local heightOfSpawnPointPlusOne = 16
 ----- SETUP -----
 
 hook.Add( "PlayerSpawn", "SpawnPointHook", function( ply )
-    local spawnPoint = ply.LinkedSpawnPoint
+    local spawnPoint = ply._linkedSpawnPoint
     if not spawnPoint or not spawnPoint:IsValid() then return end
     if not spawnPoint:IsInWorld() then
         ply:ChatPrint( "Your linked spawn point is in an invalid location" )
@@ -49,7 +49,7 @@ hook.Add( "CanTool", "CFC_Spawnpoint2_BannedTools", function( ply, tr, tool )
 end )
 
 hook.Add( "PlayerDisconnected", "UnlinkPlayerOnDisconnect", function( ply )
-    local spawnPoint = ply.LinkedSpawnPoint
+    local spawnPoint = ply._linkedSpawnPoint
     if not IsValid( spawnPoint ) then return end
     if not spawnPoint.UnlinkPlayer then return end
 
@@ -60,7 +60,7 @@ end )
 -- Remove/overwrite this hook in InitPostEntity if you need a different 'friendliness' check.
 hook.Add( "CFC_SpawnPoints_DenyLink", "CFC_SpawnPoints_FriendCheck", function( spawnPoint, ply )
     if not CPPI then
-        if spawnPoint.SpawnPointCreator == ply then return end
+        if spawnPoint._spawnPointCreator == ply then return end
 
         return "You can only link to your own Spawn Points."
     end
@@ -87,7 +87,7 @@ hook.Add( "PlayerSay", "UnlinkSpawnPointCommand", function( ply, txt )
     local unlinkSpawnCommands = commands.unlinkSpawnPoint
     if not unlinkSpawnCommands[text] then return end
 
-    local spawnPoint = ply.LinkedSpawnPoint
+    local spawnPoint = ply._linkedSpawnPoint
     if not IsValid( spawnPoint ) then
         ply:PrintMessage( 4, "You are not linked to a Spawn Point" )
 

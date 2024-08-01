@@ -21,7 +21,7 @@ local function makeSpawnPoint( ply, data )
     if validPly then
         ply:AddCount( "sent_spawnpoint", ent )
         ply:AddCleanup( "sent_spawnpoint", ent )
-        ent.SpawnPointCreator = ply
+        ent._spawnPointCreator = ply
     end
 
     return ent
@@ -51,7 +51,7 @@ function ENT:Initialize()
     self:SetMoveType( MOVETYPE_VPHYSICS )
     self:SetSolid( SOLID_VPHYSICS )
     self:SetUseType( SIMPLE_USE )
-    self.LinkedPlayers = {}
+    self._linkedPlayers = {}
 
     local phys = self:GetPhysicsObject()
     if not phys:IsValid() then return end
@@ -70,7 +70,7 @@ function ENT:OnRemove()
 end
 
 function ENT:Use( ply )
-    local isLinked = ply.LinkedSpawnPoint == self
+    local isLinked = ply._linkedSpawnPoint == self
 
     if isLinked then
         self:UnlinkPlayer( ply )
@@ -90,7 +90,7 @@ end
 
 function ENT:LinkPlayer( ply )
     if not IsValid( ply ) then return end
-    local oldSpawnPoint = ply.LinkedSpawnPoint
+    local oldSpawnPoint = ply._linkedSpawnPoint
     if oldSpawnPoint == self then return end
 
     local denyReason = hook.Run( "CFC_SpawnPoints_DenyLink", self, ply )
@@ -105,22 +105,22 @@ function ENT:LinkPlayer( ply )
         oldSpawnPoint:UnlinkPlayer( ply )
     end
 
-    ply.LinkedSpawnPoint = self
-    self.LinkedPlayers[ply] = "Linked"
+    ply._linkedSpawnPoint = self
+    self._linkedPlayers[ply] = "Linked"
 
     return true
 end
 
 function ENT:UnlinkPlayer( ply )
     if not IsValid( ply ) then return end
-    if ply.LinkedSpawnPoint ~= self then return end
+    if ply._linkedSpawnPoint ~= self then return end
 
-    ply.LinkedSpawnPoint = nil
-    self.LinkedPlayers[ply] = nil
+    ply._linkedSpawnPoint = nil
+    self._linkedPlayers[ply] = nil
 end
 
 function ENT:UnlinkAllPlayers()
-    for ply, _ in pairs( self.LinkedPlayers ) do
+    for ply, _ in pairs( self._linkedPlayers ) do
         if IsValid( ply ) then
             self:UnlinkPlayer( ply )
             ply:PrintMessage( 4, "You've been unlinked from a Spawn Point!" )
@@ -129,7 +129,7 @@ function ENT:UnlinkAllPlayers()
 end
 
 function ENT:UnlinkAllPlayersExcept( excludedPlayersLookup )
-    for ply, _ in pairs( self.LinkedPlayers ) do
+    for ply, _ in pairs( self._linkedPlayers ) do
         if IsValid( ply ) and not excludedPlayersLookup[ply] then
             self:UnlinkPlayer( ply )
             ply:PrintMessage( 4, "You've been unlinked from a Spawn Point!" )
