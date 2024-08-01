@@ -95,7 +95,14 @@ end
 
 function ENT:LinkPlayer( ply )
     if not IsValid( ply ) then return end
+    local oldSpawnPoint = ply.LinkedSpawnPoint
+    if oldSpawnPoint == self then return end
+
     if not isFriendly( self:CPPIGetOwner(), ply ) then return end
+
+    if IsValid( oldSpawnPoint ) then
+        oldSpawnPoint:UnlinkPlayer( ply )
+    end
 
     ply.LinkedSpawnPoint = self
     self.LinkedPlayers[ply] = "Linked"
@@ -105,6 +112,7 @@ end
 
 function ENT:UnlinkPlayer( ply )
     if not IsValid( ply ) then return end
+    if ply.LinkedSpawnPoint ~= self then return end
 
     ply.LinkedSpawnPoint = nil
     self.LinkedPlayers[ply] = nil
