@@ -371,6 +371,10 @@ local legalColor = Color( 255, 255, 255, 255 )
 
 function ENT:MakeLegal()
     self:SetMaterial( legalMaterial )
+    for ind = 0, #self:GetMaterials() do
+        self:SetSubMaterial( ind, legalMaterial )
+
+    end
     self:SetColor( legalColor )
     self:SetCollisionGroup( COLLISION_GROUP_NONE )
     self:SetNotSolid( false )
@@ -382,16 +386,6 @@ function ENT:MakeLegal()
 end
 
 function ENT:IsIllegal()
-    local myMat = self:GetMaterial()
-    if myMat ~= legalMaterial then
-        return true, true, "It's material was changed."
-
-    end
-    local myColor = self:GetColor()
-    if myColor ~= legalColor then
-        return true, true, "It's color was changed."
-
-    end
     local pickedUp = self:IsPlayerHolding()
     if pickedUp and self.IllegalToPickup then
         return true, true, "It's being held."
@@ -418,6 +412,24 @@ function ENT:IsIllegal()
     local illegalMass = IsValid( obj ) and obj:GetMass() ~= self.LegalMass and not pickedUp
     if illegalMass then
         return true, true, "It's mass was changed."
+
+    end
+
+    local myMat = self:GetMaterial()
+    if myMat ~= legalMaterial then return true, true, "It's material was changed." end
+
+    local myMats = self:GetMaterials()
+    for ind = 0, #myMats do
+        local matSet = self:GetSubMaterial( ind )
+        if matSet ~= legalMaterial then
+            return true, true, "It's submaterial was changed."
+
+        end
+    end
+
+    local myColor = self:GetColor()
+    if myColor ~= legalColor then
+        return true, true, "It's color was changed."
 
     end
 
