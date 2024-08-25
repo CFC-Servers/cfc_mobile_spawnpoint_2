@@ -16,7 +16,7 @@ local EFF_UNLINK_COLOR_ANG = Angle( 70, 0, 140 )
 
 local function doPointEffect( spawnPoint, colorAng )
     local eff = EffectData()
-    eff:SetOrigin( spawnPoint:GetPos() )
+    eff:SetOrigin( spawnPoint:LocalToWorld( Vector( 0, 0, 1 ) ) ) -- Ensure the effect isn't outside of the world due to the -0.1 hack in :SpawnFunction()
     eff:SetAngles( colorAng )
     util.Effect( "spawnpoint_start", eff, true, true )
 end
