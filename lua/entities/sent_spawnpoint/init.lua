@@ -16,7 +16,7 @@ local EFF_UNLINK_COLOR_ANG = Angle( 70, 0, 140 )
 
 local function doPointEffect( spawnPoint, colorAng )
     local eff = EffectData()
-    eff:SetOrigin( spawnPoint:LocalToWorld( Vector( 0, 0, 1 ) ) ) -- Ensure the effect isn't outside of the world due to the -0.1 hack in :SpawnFunction()
+    eff:SetOrigin( spawnPoint:GetPos() )
     eff:SetAngles( colorAng )
     util.Effect( "spawnpoint_start", eff, true, true )
 end
@@ -61,13 +61,18 @@ end
 function ENT:SpawnFunction( ply, tr )
     if not tr.Hit then return end
 
-    -- For some unholy reason, not adding this tiny offset makes it spawn 7.594 units higher than it should.
-    local pos = tr.HitPos + Vector( 0, 0, -0.1 )
-
+    local pos = tr.HitPos
     local ent = makeSpawnPoint( ply, {
         Pos = pos,
         Angle = Angle( 0, 0, 0 ),
     } )
+
+    -- Forcefully set the position next tick, as gmod's TryFixPropPosition() breaks with the combine mine model.
+    timer.Simple( 0, function()
+        if not IsValid( ent ) then return end
+
+        ent:SetPos( pos )
+    end )
 
     return ent
 end
