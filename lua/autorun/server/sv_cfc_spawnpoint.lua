@@ -28,6 +28,36 @@ util.AddNetworkString( "CFC_SpawnPoints_CreationDenied" )
 util.AddNetworkString( "CFC_SpawnPoints_LinkDenySound" )
 
 
+----- GLOBAL FUNCTIONS -----
+
+--[[
+    - Determines whether or not a player is considered 'friendly' to a spawn point.
+        - i.e. they can link to it, if no cooldowns or other restrictions block them.
+    - Returns friendly, failReason
+    - You can override this function in InitPostEntity if you need a different 'friendliness' check.
+--]]
+function CFC_SpawnPoints.IsFriendly( spawnPoint, ply )
+    if not CPPI then
+        if spawnPoint._spawnPointCreator == ply then return end
+
+        return false, "You can only link to your own Spawn Points."
+    end
+
+    local owner = spawnPoint:CPPIGetOwner()
+    if ply == owner then return true end
+
+    local friends = owner:CPPIGetFriends()
+
+    if friends == CPPI.CPPI_DEFER then
+        return false, "You can only link to your own Spawn Points."
+    end
+
+    if table.HasValue( friends, ply ) then return true end
+
+    return false, "You are not buddied with the Spawn Point's owner."
+end
+
+
 ----- SETUP -----
 
 hook.Add( "InitPostEntity", "CFC_SpawnPoints_Setup", function()
@@ -104,27 +134,11 @@ hook.Add( "CFC_SpawnPoints_DenyLink", "CFC_SpawnPoints_EnforcePointSpawnCooldown
     end
 end )
 
--- Denies linking based on CPPI friend status.
--- Remove/overwrite this hook in InitPostEntity if you need a different 'friendliness' check.
+-- Denies linking based on CFC_SpawnPoints.IsFriendly()
 hook.Add( "CFC_SpawnPoints_DenyLink", "CFC_SpawnPoints_FriendCheck", function( spawnPoint, ply )
-    if not CPPI then
-        if spawnPoint._spawnPointCreator == ply then return end
+    local friendly, failReason = CFC_SpawnPoints.IsFriendly( spawnPoint, ply )
 
-        return "You can only link to your own Spawn Points."
-    end
-
-    local owner = spawnPoint:CPPIGetOwner()
-    if ply == owner then return end
-
-    local friends = owner:CPPIGetFriends()
-
-    if friends == CPPI.CPPI_DEFER then
-        return "You can only link to your own Spawn Points."
-    end
-
-    if table.HasValue( friends, ply ) then return end
-
-    return "You are not buddied with the Spawn Point's owner."
+    if not friendly then return failReason end
 end )
 
 

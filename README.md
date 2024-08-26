@@ -12,12 +12,20 @@ CFC's refactor of the CFC Mobile SpawnPoint 2
 | cfc_spawnpoints_interact_cooldown | Per-player interaction cooldown for spawn points. | 1 |
 
 
+## Server Functions
+
+- `friendly, failReason = CFC_SpawnPoints.IsFriendly( spawnPoint, ply )`
+  - Determines if a player is 'friendly' with a spawn point.
+    - i.e. they can link to it, if no cooldowns or other restrictions block them.
+  - You can override this during the `InitPostEntity` hook if you need a different check (e.g. a squad/faction system).
+  - Unfriendly players will automatically be denied from using the spawn point.
+
+
 ## Server Hooks
 
 - `denyReason = CFC_SpawnPoints_DenyLink( spawnPoint, ply )`
   - Return true or a string to prevent a player from linking to a spawn point.
   - Returning a string will display it to the player to show why they couldn't do the link.
-  - By default, `CFC_SpawnPoints_FriendCheck` will listen to this hook and check CPPI ownership/friend status.
 - `denyReason = CFC_SpawnPoints_DenyCreation( ply, data )`
   - Return true or a string to prevent a player from creating a spawn point.
   - Returning a string will display it to the player to show why they couldn't create the spawn point.
