@@ -1,8 +1,9 @@
 include( "shared.lua" )
 
-local MESSAGE_DRAW_DISTANCE = 300
-local MESSAGE_FONT_SIZE = 32
-local MESSAGE_BOTTOM_HEIGHT = 50
+local MESSAGE_DRAW_DISTANCE = 500
+local MESSAGE_FONT_SIZE = 24 * 4
+local MESSAGE_BOTTOM_HEIGHT = 20
+local MESSAGE_SCALE = 0.25 / 4
 
 local MESSAGE_TEXT_POINT_SPAWN_COOLDOWN = "CANNOT LINK\n\nWAIT FOR\nTHE POINT\nTO CHARGE"
 local MESSAGE_COLOR_POINT_SPAWN_COOLDOWN = Color( 255, 0, 0 )
@@ -18,7 +19,7 @@ surface.CreateFont( "CFC_SpawnPoints_3D2DMessage", {
     size = MESSAGE_FONT_SIZE,
     weight = 500,
     antialias = true,
-    shadow = true,
+    shadow = false,
 } )
 
 
@@ -33,7 +34,7 @@ end
 function ENT:TryDrawMessage()
     local ply = LocalPlayer()
 
-    if self:GetNWEntity( "CFC_SpawnPoints_LinkedSpawnPoint" ) == ply then return end
+    if ply:GetNWEntity( "CFC_SpawnPoints_LinkedSpawnPoint" ) == self then return end
     if EyePos():Distance( self:GetPos() ) > MESSAGE_DRAW_DISTANCE then return end
     if not CFC_SpawnPoints.IsFriendly( self, ply ) then return end
 
@@ -52,14 +53,14 @@ function ENT:DrawMessage( text, color )
     local lines = string.Split( text, "\n" )
     local lineCount = #lines
 
-    local pos = self:GetPos() + Vector( 0, 0, MESSAGE_BOTTOM_HEIGHT + MESSAGE_FONT_SIZE * lineCount )
+    local pos = self:GetPos() + Vector( 0, 0, MESSAGE_BOTTOM_HEIGHT + MESSAGE_FONT_SIZE * MESSAGE_SCALE * lineCount )
     local ang = ( pos - EyePos() ):Angle()
 
     ang[1] = 0
-    ang:RotateAroundAxis( ang:Up(), 90 )
+    ang:RotateAroundAxis( ang:Up(), -90 )
     ang:RotateAroundAxis( ang:Forward(), 90 )
 
-    cam.Start3D2D( pos, ang, 1 )
+    cam.Start3D2D( pos, ang, MESSAGE_SCALE )
         local y = 0
 
         for _, line in ipairs( lines ) do
