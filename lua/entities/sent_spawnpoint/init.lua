@@ -49,7 +49,7 @@ local function makeSpawnPoint( ply, data )
     if validPly then
         ply:AddCount( "sent_spawnpoint", ent )
         ply:AddCleanup( "sent_spawnpoint", ent )
-        ent._spawnPointCreator = ply
+        ent:SetCreatingPlayer( ply )
     end
 
     return ent

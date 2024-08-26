@@ -5,3 +5,8 @@ ENT.Author			= "Esik1er"
 
 ENT.Spawnable			= true
 ENT.AdminSpawnable		= true
+
+
+function ENT:SetupDataTables()
+    self:NetworkVar( "Entity", 0, "CreatingPlayer" )
+end
