@@ -23,6 +23,25 @@ surface.CreateFont( "CFC_SpawnPoints_3D2DMessage", {
 } )
 
 
+----- PRIVATE FUNCTIONS -----
+
+local function shouldShowPointSpawnCooldown( spawnPoint, ply, now )
+    if now >= spawnPoint:GetCreationCooldownEndTime() then return false end
+    if hook.Run( "CFC_SpawnPoints_IgnorePointSpawnCooldown", spawnPoint, ply ) then return false end
+
+    return true
+end
+
+local function shouldShowPlayerSpawnCooldown( _spawnPoint, ply, now )
+    if now >= ply:GetNWFloat( "CFC_SpawnPoints_SpawnCooldownEndTime", 0 ) then return false end
+    if hook.Run( "CFC_SpawnPoints_IgnorePlayerSpawnCooldown", ply ) then return false end
+
+    return true
+end
+
+
+----- ENTITY METHODS -----
+
 function ENT:Initialize()
 end
 
@@ -40,9 +59,9 @@ function ENT:TryDrawMessage()
 
     local now = CurTime()
 
-    if now < self:GetCreationCooldownEndTime() then
+    if shouldShowPointSpawnCooldown( self, ply, now ) then
         self:DrawMessage( MESSAGE_TEXT_POINT_SPAWN_COOLDOWN, MESSAGE_COLOR_POINT_SPAWN_COOLDOWN )
-    elseif now < ply:GetNWFloat( "CFC_SpawnPoints_SpawnCooldownEndTime", 0 ) then
+    elseif shouldShowPlayerSpawnCooldown( self, ply, now ) then
         self:DrawMessage( MESSAGE_TEXT_PLAYER_SPAWN_COOLDOWN, MESSAGE_COLOR_PLAYER_SPAWN_COOLDOWN )
     else
         self:DrawMessage( MESSAGE_TEXT_LINK, MESSAGE_COLOR_LINK )
