@@ -97,7 +97,7 @@ function ENT:Initialize()
 
     local cooldown = COOLDOWN_ON_POINT_SPAWN:GetFloat()
 
-    self._spawnPointCooldownEndTime = CurTime() + cooldown
+    self:SetCreationCooldownEndTime( CurTime() + cooldown )
 
     if cooldown > 0 then
         timer.Simple( cooldown, function()
@@ -140,7 +140,7 @@ function ENT:Use( ply )
         endTimes[ply] = now + interactCooldown
     end
 
-    local isLinked = ply._linkedSpawnPoint == self
+    local isLinked = ply:GetNWEntity( "CFC_SpawnPoints_LinkedSpawnPoint" ) == self
 
     if isLinked then
         -- Unlink
@@ -172,7 +172,7 @@ end
 
 function ENT:LinkPlayer( ply )
     if not IsValid( ply ) then return end
-    local oldSpawnPoint = ply._linkedSpawnPoint
+    local oldSpawnPoint = ply:GetNWEntity( "CFC_SpawnPoints_LinkedSpawnPoint" )
     if oldSpawnPoint == self then return end
 
     local denyReason = hook.Run( "CFC_SpawnPoints_DenyLink", self, ply )
@@ -187,7 +187,7 @@ function ENT:LinkPlayer( ply )
         oldSpawnPoint:UnlinkPlayer( ply )
     end
 
-    ply._linkedSpawnPoint = self
+    ply:SetNWEntity( "CFC_SpawnPoints_LinkedSpawnPoint", self )
     self._linkedPlayers[ply] = "Linked"
 
     return true
@@ -195,9 +195,9 @@ end
 
 function ENT:UnlinkPlayer( ply )
     if not IsValid( ply ) then return end
-    if ply._linkedSpawnPoint ~= self then return end
+    if ply:GetNWEntity( "CFC_SpawnPoints_LinkedSpawnPoint" ) ~= self then return end
 
-    ply._linkedSpawnPoint = nil
+    ply:SetNWEntity( "CFC_SpawnPoints_LinkedSpawnPoint", NULL )
     self._linkedPlayers[ply] = nil
 end
 

@@ -9,4 +9,5 @@ ENT.AdminSpawnable		= true
 
 function ENT:SetupDataTables()
     self:NetworkVar( "Entity", 0, "CreatingPlayer" )
+    self:NetworkVar( "Float", 0, "CreationCooldownEndTime" )
 end
