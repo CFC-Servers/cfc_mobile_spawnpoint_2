@@ -103,6 +103,11 @@ function ENT:Initialize()
         timer.Simple( cooldown, function()
             if not IsValid( self ) then return end
 
+            -- No need to do the effect if the main owner isn't under point spawn cooldown.
+            local owner = CPPI and self:CPPIGetOwner() or self:GetCreatingPlayer()
+            if not IsValid( owner ) then return end
+            if hook.Run( "CFC_SpawnPoints_IgnorePointSpawnCooldown", self, owner ) then return end
+
             doPointEffect( self, EFF_COOLDOWN_FINISHED_COLOR_ANG )
             self:EmitSound( "npc/roller/remote_yes.wav", 85, 110 )
         end )
