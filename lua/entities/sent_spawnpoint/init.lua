@@ -111,10 +111,12 @@ end
 
 function ENT:OnRemove()
     local atLeastOneLinked = false
+    local now = CurTime()
 
     for ply in pairs( self._linkedPlayers ) do
         if IsValid( ply ) then
             atLeastOneLinked = true
+            ply:SetNWFloat( "CFC_SpawnPoints_LastRemovedTime", now )
             break
         end
     end
@@ -125,6 +127,12 @@ function ENT:OnRemove()
 
     doPointEffect( self, EFF_REMOVE_COLOR_ANG )
     self:UnlinkAllPlayers()
+
+    local owner = CPPI and self:CPPIGetOwner() or self:GetCreatingPlayer()
+
+    if IsValid( owner ) then
+        owner:SetNWFloat( "CFC_SpawnPoints_LastRemovedTime", now )
+    end
 end
 
 function ENT:Use( ply )

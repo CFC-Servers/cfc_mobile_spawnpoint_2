@@ -9,6 +9,10 @@ CreateConVar( "cfc_spawnpoints_cooldown_on_ply_spawn", 10, { FCVAR_ARCHIVE, FCVA
 CreateConVar( "cfc_spawnpoints_cooldown_on_point_spawn", 5, { FCVAR_ARCHIVE, FCVAR_REPLICATED }, "When a spawn point is created, it cannot be linked to for this many seconds.", 0, 1000 )
 CreateConVar( "cfc_spawnpoints_interact_cooldown", 1, { FCVAR_ARCHIVE, FCVAR_REPLICATED }, "Per-player interaction cooldown for spawn points.", 0, 1000 )
 
+local REMOVAL_WINDOW = CreateConVar( "cfc_spawnpoints_removal_window", 30, { FCVAR_ARCHIVE, FCVAR_REPLICATED }, "Player/point cooldowns only apply if a previous spawn point was removed in the past X seconds. 0 to not alter cooldowns.", 0, 1000 )
+
+
+----- GLOBAL FUNCTIONS -----
 
 --[[
     - Determines whether or not a player is considered 'friendly' to a spawn point.
@@ -36,3 +40,26 @@ function CFC_SpawnPoints.IsFriendly( spawnPoint, ply )
 
     return false, "You are not buddied with the Spawn Point's owner."
 end
+
+
+----- PRIVATE FUNCTIONS -----
+
+local function ignoreCooldownsDueToRemovalWindow( ply )
+    if REMOVAL_WINDOW:GetFloat() <= 0 then return false end
+
+    local lastRemoval = ply:GetNWFloat( "CFC_SpawnPoints_LastRemovedTime", 0 )
+    local hasBeenALongTime = CurTime() - lastRemoval > REMOVAL_WINDOW:GetFloat()
+
+    return hasBeenALongTime
+end
+
+
+----- SETUP -----
+
+hook.Add( "CFC_SpawnPoints_IgnorePlayerSpawnCooldown", "CFC_SpawnPoints_RemovalWindow", function( ply )
+    if ignoreCooldownsDueToRemovalWindow( ply ) then return true end
+end )
+
+hook.Add( "CFC_SpawnPoints_IgnorePointSpawnCooldown", "CFC_SpawnPoints_RemovalWindow", function( _spawnPoint, ply )
+    if ignoreCooldownsDueToRemovalWindow( ply ) then return true end
+end )
