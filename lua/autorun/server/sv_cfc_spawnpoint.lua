@@ -15,6 +15,11 @@ CFC_SpawnPoints.COMMANDS = {
 CFC_SpawnPoints.BANNED_TOOLS = {
     ["nocollideeverything"] = true,
     ["nocollide"] = true,
+    ["material"] = true,
+    ["submaterial"] = true,
+    ["fadingdoor"] = true,
+    ["fading_door"] = true,
+    ["colour"] = true,
 }
 
 local COOLDOWN_ON_PLY_SPAWN
