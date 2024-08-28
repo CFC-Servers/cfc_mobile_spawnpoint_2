@@ -63,3 +63,34 @@ end )
 hook.Add( "CFC_SpawnPoints_IgnorePointSpawnCooldown", "CFC_SpawnPoints_RemovalWindow", function( _spawnPoint, ply )
     if ignoreCooldownsDueToRemovalWindow( ply ) then return true end
 end )
+
+hook.Add( "InitPostEntity", "CFC_SpawnPoints_BlockInvisibility", function()
+    local entityMeta = FindMetaTable( "Entity" )
+
+    local setColor = entityMeta.SetColor
+    function entityMeta:SetColor( color )
+        if color and color.a ~= 255 and self:GetClass() == "sent_spawnpoint" then
+            setColor( self, Color( color.r, color.g, color.b, 255 ) )
+        else
+            setColor( self, color )
+        end
+    end
+
+    local setMaterial = entityMeta.SetMaterial
+    function entityMeta:SetMaterial( material )
+        if self:GetClass() == "sent_spawnpoint" then
+            setMaterial( self, "" )
+        else
+            setMaterial( self, material )
+        end
+    end
+
+    local setSubMaterial = entityMeta.SetSubMaterial
+    function entityMeta:SetSubMaterial( index, material )
+        if self:GetClass() == "sent_spawnpoint" then
+            material = ""
+        end
+
+        setSubMaterial( self, index, material )
+    end
+end )

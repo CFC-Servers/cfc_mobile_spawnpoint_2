@@ -56,14 +56,6 @@ local function makeSpawnPoint( ply, data )
     ent:SetColor( Color( 255, 255, 255, 255 ) )
     ent:SetMaterial( "" )
 
-    if data.EntityMods then
-        data.EntityMods.colour = nil
-        data.EntityMods.material = nil
-        data.EntityMods.MaterialData = nil
-    end
-
-    data.MaterialData = nil
-
     return ent
 end
 
