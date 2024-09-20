@@ -1,6 +1,5 @@
 local limits = {
-    sent_basespawnpoint = 1,
-    sent_spawnpoint = 2,
+    sent_spawnpoint = 1,
 
 }
 

@@ -2,30 +2,90 @@ AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 include( "shared.lua" )
 
-ENT.IllegalToPickup = false
-ENT.SpawningHealth = 400 -- two crossbow bolts
-ENT.MaxHealth = ENT.SpawningHealth
-ENT.PlayerSpawnOffset = Vector( 0, 0, 0 )
-ENT.PlayerSpawnOffsetWorld = Vector( 0, 0, 16 )
-ENT.SpawnpointFxOffset = Vector( 0, 0, 0 )
-
-ENT.LegalMass = 100
-ENT.LegalMaxs = Vector( 5, 5, 2 )
-
-ENT.SpawnpointModel = "models/props_combine/combine_mine01.mdl"
+util.AddNetworkString( "CFC_spawnpoints_linkedtospawn" )
 
 local HUD_PRINTCENTER = HUD_PRINTCENTER
 
-local function miniSpark( pos, scale )
-    local effectdata = EffectData()
-    effectdata:SetOrigin( pos )
-    effectdata:SetNormal( VectorRand() )
-    effectdata:SetMagnitude( 3 * scale ) --amount and shoot hardness
-    effectdata:SetScale( 1 * scale ) --length of strands
-    effectdata:SetRadius( 3 * scale ) --thickness of strands
-    util.Effect( "Sparks", effectdata )
+-- commands
+
+
+local defaultRespawnLinkDelay = 5
+desc = "Delay until a player can link to a spawnpoint, after respawning, -1 for default (" .. tostring( defaultRespawnLinkDelay ) .. ")"
+
+local respawnLinkDelayVar = CreateConVar( "cfc_mobilespawn_respawnlinkdelay", -1, FCVAR_ARCHIVE, desc )
+local function respawnLinkDelay()
+    local var = respawnLinkDelayVar:GetFloat()
+    if var <= -1 then
+        return defaultRespawnLinkDelay
+
+    else
+        return var
+
+    end
+end
+hook.Add( "PlayerSpawn", "cfc_mobilespawns_respawnlinkdelay", function( spawned )
+    spawned.cfc_MobileSpawns_JustSpawnedBlock = CurTime() + respawnLinkDelay()
+
+end )
+
+
+local defaultSpawnHealth = 50
+desc = "Health of the spawnpoints, -1 for default (" .. tostring( defaultSpawnHealth ) .. ")"
+
+local spawnHealthVar = CreateConVar( "cfc_mobilespawn_spawnhealth", -1, FCVAR_ARCHIVE, desc )
+local function spawnPointHealth()
+    local var = spawnHealthVar:GetFloat()
+    if var <= -1 then
+        return defaultSpawnHealth
+
+    else
+        return var
+
+    end
+end
+
+
+local defaultMaxShieldHealth = 1000
+desc = "Max health of the spawnpoint's shield, -1 for default (" .. tostring( defaultMaxShieldHealth ) .. ")"
+
+local maxShieldHealthVar = CreateConVar( "cfc_mobilespawn_shield_maxhp", -1, FCVAR_ARCHIVE, desc )
+local function maxShieldHealth()
+    local var = maxShieldHealthVar:GetFloat()
+    if var <= -1 then
+        return defaultMaxShieldHealth
+
+    else
+        return var
+
+    end
+end
+function ENT:MaxShieldHealth()
+    return maxShieldHealth()
 
 end
+
+
+local defaultShieldRegen = 50
+desc = "Shield health regenerated every 1s, -1 for default (" .. tostring( defaultShieldRegen ) .. ")"
+
+local shieldRegenVar = CreateConVar( "cfc_mobilespawn_shield_regen", -1, FCVAR_ARCHIVE, desc )
+local function shieldRegen()
+    local var = shieldRegenVar:GetFloat()
+    if var <= -1 then
+        return defaultShieldRegen
+
+    else
+        return var
+
+    end
+end
+function ENT:ShieldHealthRegen()
+    return shieldRegen()
+
+end
+
+
+-- util funcs
 
 local function unlinkPlayerFromSpawnPoint( ply, spawnPoint )
     if not IsValid( ply ) then return end
@@ -91,218 +151,25 @@ end
 hook.Remove( "PlayerDisconnected", "UnlinkPlayerOnDisconnect" )
 hook.Add( "PlayerDisconnected", "UnlinkPlayerOnDisconnect", unlinkPlayerOnDisconnect )
 
+-- sound/effect funcs
 
-local defaultRespawnLinkDelay = 10
-desc = "Delay until a player can link to a spawnpoint, after respawning, -1 for default (" .. tostring( defaultRespawnLinkDelay ) .. ")"
-
-local respawnLinkDelayVar = CreateConVar( "cfc_mobilespawn_respawnlinkdelay", -1, FCVAR_ARCHIVE, desc )
-local function respawnLinkDelay()
-    local var = respawnLinkDelayVar:GetFloat()
-    if var <= -1 then
-        return defaultRespawnLinkDelay
-
-    else
-        return var
-
-    end
-end
-hook.Add( "PlayerSpawn", "cfc_mobilespawns_respawnlinkdelay", function( spawned )
-    spawned.cfc_MobileSpawns_JustSpawnedBlock = CurTime() + respawnLinkDelay()
-
-end )
-
-local defaultLinkDelay = 1.75
-desc = "How long does a mobile spawnpoint have to exist for, before a player can link to it, -1 for default (" .. tostring( defaultLinkDelay ) .. ")"
-
-local linkDelayVar = CreateConVar( "cfc_mobilespawn_linkdelay", -1, FCVAR_ARCHIVE, desc )
-local function linkDelay()
-    local var = linkDelayVar:GetFloat()
-    if var <= -1 then
-        return defaultLinkDelay
-
-    else
-        return var
-
-    end
-end
-
-
--- Entity Methods
-function ENT:SpawnFunction( spawner, tr )
-    if not tr.Hit then return end
-    local spawnPos = tr.HitPos
-    local spawnAng = Angle( 0, spawner:EyeAngles().y, 0 )
-    local ent = ents.Create( "sent_spawnpoint" )
-    ent:SetPos( spawnPos + -tr.HitNormal )
-    ent:SetAngles( spawnAng )
-    ent:Spawn()
-    ent:Activate()
-
-    return ent
-end
-
-function ENT:ResetData()
-    self:SetShielded( false )
-    self:SetShieldHealth( 0 )
+local function miniSpark( pos, scale )
+    local effectdata = EffectData()
+    effectdata:SetOrigin( pos )
+    effectdata:SetNormal( VectorRand() )
+    effectdata:SetMagnitude( 3 * scale ) --amount and shoot hardness
+    effectdata:SetScale( 1 * scale ) --length of strands
+    effectdata:SetRadius( 3 * scale ) --thickness of strands
+    util.Effect( "Sparks", effectdata )
 
 end
 
-function ENT:Initialize()
-    self:ResetData()
-
-    self.SpawnpointHealth = self.SpawningHealth
-    self.nextDamageWhine = 0
-    self.nextLinkedFX = 0
-
-    self:SetTrigger( true )
-
-    self:SetModel( self.SpawnpointModel )
-    self:PhysicsInit( SOLID_VPHYSICS )
-    self:SetMoveType( MOVETYPE_VPHYSICS )
-    self:SetSolid( SOLID_VPHYSICS )
-    self:SetUseType( SIMPLE_USE )
-    self.LinkedPlayers = {}
-
-    self.mobileSpawns_LinkAge = CurTime() + linkDelay()
-
-    local phys = self:GetPhysicsObject()
-    if IsValid( phys ) then
-        phys:Wake()
-        phys:EnableDrag( true )
-        phys:EnableMotion( false )
-
-    end
-
-    self:SpawnpointPostInitialize()
-
+function ENT:SpawnpointLightsEffect( scale )
     local effData = EffectData()
     effData:SetOrigin( self:LocalToWorld( self.SpawnpointFxOffset ) )
-    effData:SetScale( 0.5 )
+    effData:SetScale( scale )
     util.Effect( "spawnpoint_start", effData )
-
-    self:MakeLegal()
-
 end
-
-function ENT:OnRemove()
-    local effData = EffectData()
-    effData:SetOrigin( self:LocalToWorld( self.SpawnpointFxOffset ) )
-    effData:SetScale( 1 )
-    util.Effect( "spawnpoint_start", effData )
-
-    self:OnSpawnRemoved()
-
-    local message = "Your linked spawnpoint was removed"
-    if self.spawnpointBroken then
-        message = "Your linked spawnpoint died"
-
-    end
-
-    unlinkAllPlayersFromSpawnPoint( self, {}, message )
-end
-
-function ENT:SpawnpointMassCenter()
-    local obj = self:GetPhysicsObject()
-    if not IsValid( obj ) then return self:WorldSpaceCenter() end
-    return self:LocalToWorld( obj:GetMassCenter() )
-
-end
-
-function ENT:Use( ply )
-    self:TryToLink( ply )
-
-end
-
-function ENT:TryToLink( ply )
-    if not IsValid( ply ) then return end
-    if not ply:IsPlayer() then return end
-
-    self.nextLinkedFX = CurTime() + 5
-
-    timer.Simple( 0, function()
-        if not IsValid( self ) then return end
-        local effData = EffectData()
-        effData:SetOrigin( self:LocalToWorld( self.SpawnpointFxOffset ) )
-        effData:SetScale( 0.5 )
-        util.Effect( "spawnpoint_start", effData )
-
-    end )
-
-    local playerLinkedToSpawnPoint = ply.LinkedSpawnPoint == self
-
-    if playerLinkedToSpawnPoint and not enableOnly then
-        unlinkPlayerFromSpawnPoint( ply, self )
-        ply:PrintMessage( HUD_PRINTCENTER, "Spawn Point unlinked" )
-    elseif not playerLinkedToSpawnPoint then
-        local is, _, reason = self:IsIllegal()
-        if is then
-            self:MakeLegal()
-            self:DoQuietSound( "npc/roller/code2.wav" )
-            ply:PrintMessage( HUD_PRINTCENTER, "Can't link to this because...\n" .. reason )
-            return
-
-        end
-
-        if ply.cfc_MobileSpawns_JustSpawnedBlock > CurTime() then
-            local untilTime = math.abs( ply.cfc_MobileSpawns_JustSpawnedBlock - CurTime() )
-            untilTime = math.Round( untilTime, 1 )
-
-            self:DoQuietSound( "npc/roller/code2.wav" )
-            ply:PrintMessage( HUD_PRINTCENTER, "You just respawned.\nCan link to spawns in... " .. untilTime .. " seconds." )
-            return
-
-        end
-
-        if self.mobileSpawns_LinkAge > CurTime() then
-            local untilTime = math.abs( self.mobileSpawns_LinkAge - CurTime() )
-            untilTime = math.Round( untilTime, 1 )
-
-            self:DoQuietSound( "npc/roller/code2.wav" )
-            ply:PrintMessage( HUD_PRINTCENTER, "That spawnpoint was just created!\nCan link in " .. untilTime .. " seconds." )
-            return
-
-        end
-
-        local success = linkPlayerToSpawnPoint( ply, self )
-
-        if success then
-            if not self.SetupFirstTime then
-                self.SetupFirstTime = true
-                self:DoFirstTimeSetupFX( ply )
-
-            end
-            self:DoQuietSound( "npc/roller/remote_yes.wav" )
-            ply:PrintMessage( HUD_PRINTCENTER, "Spawn Point set." )
-
-        elseif not enableOnly then
-            self:DoQuietSound( "npc/roller/code2.wav" )
-            ply:PrintMessage( HUD_PRINTCENTER, "Unable to set spawnpoint. You are not in the same squad as the owner." )
-
-        end
-    end
-end
-
--- where respawned players are placed
-function ENT:RespawnPos()
-    return self:LocalToWorld( self.PlayerSpawnOffset ) + self.PlayerSpawnOffsetWorld
-
-end
-
-local function SpawnPointHook( ply )
-    local spawnPoint = ply.LinkedSpawnPoint
-    if not spawnPoint or not spawnPoint:IsValid() then return end
-    if spawnPoint:IsIllegal() then return end
-
-    local spawnPos = spawnPoint:RespawnPos()
-    ply:SetPos( spawnPos )
-
-    spawnPoint:DoSpawningFX( ply )
-    spawnPoint.nextLinkedFX = CurTime() + 5
-
-end
-
-hook.Remove( "PlayerSpawn", "SpawnPointHook" )
-hook.Add( "PlayerSpawn", "SpawnPointHook", SpawnPointHook )
 
 -- play a really obvious sound the first time someone sets their spawn as me
 function ENT:DoFirstTimeSetupFX( _ )
@@ -314,10 +181,7 @@ function ENT:DoFirstTimeSetupFX( _ )
 end
 
 function ENT:DoSpawningFX( _ )
-    local effData = EffectData()
-    effData:SetOrigin( self:LocalToWorld( self.SpawnpointFxOffset ) )
-    effData:SetScale( 2 )
-    util.Effect( "spawnpoint_start", effData )
+    self:SpawnpointLightsEffect( 2 )
 
     self:EmitSound( "npc/scanner/combat_scan2.wav", 72, math.random( 110, 140 ), 1, CHAN_STATIC )
     self:EmitSound( "items/medshot4.wav", 72, math.random( 120, 130 ), 1, CHAN_ITEM )
@@ -346,6 +210,243 @@ function ENT:DoQuietSound( path )
     end )
 end
 
+
+local shieldReflect = {
+    "weapons/physcannon/superphys_small_zap1.wav",
+    "weapons/physcannon/superphys_small_zap2.wav",
+    "weapons/physcannon/superphys_small_zap3.wav",
+    "weapons/physcannon/superphys_small_zap4.wav",
+    "weapons/physcannon/energy_bounce1.wav",
+    "weapons/physcannon/energy_bounce2.wav",
+
+}
+
+function ENT:ShieldReflectFX()
+    self:EmitSound( shieldReflect[math.random( 1, #shieldReflect )], 70, math.random( 120, 140 ), 1, CHAN_BODY )
+    util.ScreenShake( self:WorldSpaceCenter(), 1, 10, 0.1, 1000 )
+
+end
+
+
+local regenerateSounds = {
+    "weapons/physcannon/superphys_small_zap1.wav",
+    "weapons/physcannon/superphys_small_zap2.wav",
+    "weapons/physcannon/superphys_small_zap3.wav",
+    "weapons/physcannon/superphys_small_zap4.wav",
+
+}
+
+function ENT:ShieldRegenFX()
+    self:EmitSound( regenerateSounds[math.random( 1, #regenerateSounds )], 65, math.random( 80, 90 ), 1, CHAN_BODY )
+
+end
+
+function ENT:OnDamagedFX()
+    local sparkPos = self:SpawnpointMassCenter()
+    timer.Simple( 0, function()
+        miniSpark( sparkPos, 1 )
+
+    end )
+
+    if self.SpawnpointHealth <= 0 then
+        self:Break()
+        return
+
+    else
+        if self.nextDamageWhine < CurTime() then
+            self.nextDamageWhine = CurTime() + 0.75
+            self:EmitSound( "npc/roller/mine/rmine_blip3.wav", 78, math.random( 110, 120 ), 1, CHAN_STATIC )
+
+        end
+        self:EmitSound( "Computer.BulletImpact" )
+        self:EmitSound( "physics/metal/metal_canister_impact_hard" .. math.random( 1, 3 ) .. ".wav", 75, math.random( 110, 120 ), 1, CHAN_STATIC )
+
+    end
+end
+
+-- entity vars
+
+ENT.PlayerSpawnOffset = Vector( 0, 0, 0 )
+ENT.PlayerSpawnOffsetWorld = Vector( 0, 0, 16 )
+ENT.SpawnpointFxOffset = Vector( 0, 0, 0 )
+
+ENT.ShieldRegenDelay = 10
+ENT.LegalMaxs = 20
+ENT.SpawnpointModel = "models/props_combine/combine_mine01.mdl"
+
+-- Entity Methods
+function ENT:SpawnFunction( spawner, tr )
+    if not tr.Hit then return end
+    local spawnPos = tr.HitPos
+    local spawnAng = Angle( 0, spawner:EyeAngles().y, 0 )
+    local ent = ents.Create( "sent_spawnpoint" )
+    ent:SetCreator( spawner )
+    ent:SetPos( spawnPos + -tr.HitNormal )
+    ent:SetAngles( spawnAng )
+    ent:Spawn()
+    ent:Activate()
+
+    return ent
+end
+
+function ENT:ResetData()
+    self:SetShielded( false )
+    self:SetShieldHealth( 0 )
+    self:SetShieldOn( false )
+    self:SetShieldSetupTime( 0 )
+
+end
+
+function ENT:Initialize()
+
+    self:ResetData()
+
+    self.SpawnpointHealth = spawnPointHealth()
+    self.nextDamageWhine = 0
+    self.nextLinkedFX = 0
+
+    self:SetTrigger( true )
+
+    self:SetModel( self.SpawnpointModel )
+    self:PhysicsInit( SOLID_VPHYSICS )
+    self:SetMoveType( MOVETYPE_VPHYSICS )
+    self:SetSolid( SOLID_VPHYSICS )
+    self:SetUseType( SIMPLE_USE )
+    self.LinkedPlayers = {}
+
+    local phys = self:GetPhysicsObject()
+    if IsValid( phys ) then
+        phys:Wake()
+        phys:EnableDrag( true )
+        phys:EnableMotion( false )
+
+    end
+
+    local effData = EffectData()
+    effData:SetOrigin( self:LocalToWorld( self.SpawnpointFxOffset ) )
+    effData:SetScale( 0.5 )
+    util.Effect( "spawnpoint_start", effData )
+
+    self:MakeLegal()
+
+    hook.Run( "CFC_MobileSpawn_CreatedSpawn", self )
+end
+
+function ENT:OnRemove()
+    local effData = EffectData()
+    effData:SetOrigin( self:LocalToWorld( self.SpawnpointFxOffset ) )
+    effData:SetScale( 1 )
+    util.Effect( "spawnpoint_start", effData )
+
+    local message = "Your linked spawnpoint was removed."
+    if self.spawnpointBroken then
+        message = "Your linked spawnpoint died."
+
+    end
+
+    unlinkAllPlayersFromSpawnPoint( self, {}, message )
+end
+
+function ENT:SpawnpointMassCenter()
+    local obj = self:GetPhysicsObject()
+    if not IsValid( obj ) then return self:WorldSpaceCenter() end
+    return self:LocalToWorld( obj:GetMassCenter() )
+
+end
+
+function ENT:Use( ply )
+    self:TryToLink( ply )
+
+end
+
+function ENT:TryToLink( ply )
+    if not IsValid( ply ) then return end
+    if not ply:IsPlayer() then return end
+
+    self.nextLinkedFX = CurTime() + 5
+
+    timer.Simple( 0, function()
+        if not IsValid( self ) then return end
+        self:SpawnpointLightsEffect( 0.5 )
+
+    end )
+
+    local playerLinkedToSpawnPoint = ply.LinkedSpawnPoint == self
+
+    if playerLinkedToSpawnPoint and not enableOnly then
+        unlinkPlayerFromSpawnPoint( ply, self )
+        ply:PrintMessage( HUD_PRINTCENTER, "Spawn Point unlinked" )
+        return
+
+    elseif not playerLinkedToSpawnPoint then
+        local is, _, reason = self:IsIllegal()
+        if is then
+            self:MakeLegal()
+            self:DoQuietSound( "npc/roller/code2.wav" )
+            ply:PrintMessage( HUD_PRINTCENTER, "Can't link to this because...\n" .. reason )
+            return
+
+        end
+
+        if ply.cfc_MobileSpawns_JustSpawnedBlock > CurTime() then
+            local untilTime = math.abs( ply.cfc_MobileSpawns_JustSpawnedBlock - CurTime() )
+            untilTime = math.Round( untilTime, 1 )
+
+            self:DoQuietSound( "npc/roller/code2.wav" )
+            ply:PrintMessage( HUD_PRINTCENTER, "You just respawned.\nCan link to spawns in... " .. untilTime .. " seconds." )
+            return
+
+        end
+
+        local success = linkPlayerToSpawnPoint( ply, self )
+
+        if success then
+            if not self.SetupFirstTime then
+                self.SetupFirstTime = true
+                self:DoFirstTimeSetupFX( ply )
+
+            end
+            self:DoQuietSound( "npc/roller/remote_yes.wav" )
+            ply:PrintMessage( HUD_PRINTCENTER, "Spawn Point set." )
+            net.Start( "CFC_spawnpoints_linkedtospawn", true )
+            net.Send( ply )
+            return
+
+        elseif not enableOnly then
+            self:DoQuietSound( "npc/roller/code2.wav" )
+            ply:PrintMessage( HUD_PRINTCENTER, "Unable to set spawnpoint. You are not in the same squad as the owner." )
+            return
+
+        end
+    end
+end
+
+-- where respawned players are placed
+function ENT:RespawnPos()
+    return self:LocalToWorld( self.PlayerSpawnOffset ) + self.PlayerSpawnOffsetWorld
+
+end
+
+-- respawns people at the spawn
+
+local function SpawnPointHook( ply )
+    local spawnPoint = ply.LinkedSpawnPoint
+    if not spawnPoint or not spawnPoint:IsValid() then return end
+    if spawnPoint:IsIllegal() then return end
+
+    local spawnPos = spawnPoint:RespawnPos()
+    ply:SetPos( spawnPos )
+
+    spawnPoint:DoSpawningFX( ply )
+    spawnPoint.nextLinkedFX = CurTime() + 5
+
+end
+
+hook.Remove( "PlayerSpawn", "SpawnPointHook" )
+hook.Add( "PlayerSpawn", "SpawnPointHook", SpawnPointHook )
+
+-- legality
+
 local legalMaterial = ""
 local legalColor = Color( 255, 255, 255, 255 )
 
@@ -358,20 +459,9 @@ function ENT:MakeLegal()
     self:SetColor( legalColor )
     self:SetCollisionGroup( COLLISION_GROUP_NONE )
     self:SetNotSolid( false )
-    local obj = self:GetPhysicsObject()
-    if IsValid( obj ) then
-        obj:SetMass( self.LegalMass )
-
-    end
 end
 
 function ENT:IsIllegal()
-    local pickedUp = self:IsPlayerHolding()
-    if pickedUp and self.IllegalToPickup then
-        return true, true, "It's being held."
-
-    end
-
     local hasParent = IsValid( self:GetParent() )
     if hasParent then
         return true, true, "It's parented to something."
@@ -385,13 +475,6 @@ function ENT:IsIllegal()
     end
     if not self:IsSolid() then
         return true, true, "It was made non-solid."
-
-    end
-
-    local obj = self:GetPhysicsObject()
-    local illegalMass = IsValid( obj ) and obj:GetMass() ~= self.LegalMass and not pickedUp
-    if illegalMass then
-        return true, true, "It's mass was changed."
 
     end
 
@@ -432,7 +515,7 @@ function ENT:IsIllegal()
             local blocker = legalTrace.Entity
             local blockersObj = blocker:GetPhysicsObject()
             local canIgnore = blocker:IsPlayer()
-            if not canIgnore and IsValid( blockersObj ) and blockersObj:GetMass() <= self.LegalMass then
+            if not canIgnore and IsValid( blockersObj ) and blockersObj:GetMass() <= 100 then
                 canIgnore = true
 
             end
@@ -449,7 +532,21 @@ function ENT:IsIllegal()
 end
 
 function ENT:Think()
-    if table.Count( self.LinkedPlayers ) > 0 then
+
+    self:ShieldThink()
+
+    local linkedPlysCount = table.Count( self.LinkedPlayers )
+    if self.nextLinkedFX < CurTime() then
+        self.nextLinkedFX = CurTime() + math.random( 5, 10 )
+        if linkedPlysCount then
+            local effData = EffectData()
+            effData:SetOrigin( self:LocalToWorld( self.SpawnpointFxOffset ) )
+            effData:SetScale( 0.5 )
+            util.Effect( "spawnpoint_start", effData )
+
+        end
+    end
+    if linkedPlysCount > 0 then
         local is, doUnlink, reason = self:IsIllegal()
         if is then
             self:MakeLegal()
@@ -462,17 +559,6 @@ function ENT:Think()
             end
         end
     end
-    if self.nextLinkedFX < CurTime() then
-        self.nextLinkedFX = CurTime() + math.random( 5, 10 )
-        if table.Count( self.LinkedPlayers ) >= 1 then
-            local effData = EffectData()
-            effData:SetOrigin( self:LocalToWorld( self.SpawnpointFxOffset ) )
-            effData:SetScale( 0.5 )
-            util.Effect( "spawnpoint_start", effData )
-
-        end
-    end
-    self:SpawnpointThink()
     self:NextThink( CurTime() + 1 )
     return true
 
@@ -491,32 +577,25 @@ function ENT:OnTakeDamage( dmg )
     if self.spawnpointBroken then return end
     self:TakePhysicsDamage( dmg )
 
-    if self:SpawnpointPreTakeDamage( dmg ) then return end
-
     local damage = dmg:GetDamage()
-    self.SpawnpointHealth = self.SpawnpointHealth - damage
 
-    local sparkPos = self:SpawnpointMassCenter()
-    timer.Simple( 0, function()
-        miniSpark( sparkPos, 1 )
+    if self:ShieldIsHolding() then
+        self:ShieldReflectFX()
 
-    end )
-
-    if self.SpawnpointHealth <= 0 then
-        self:Break()
-        return
-
-    else
-        if self.nextDamageWhine < CurTime() then
-            self.nextDamageWhine = CurTime() + 0.75
-            self:EmitSound( "npc/roller/mine/rmine_blip3.wav", 78, math.random( 110, 120 ), 1, CHAN_STATIC )
+        -- explosions are too easy!
+        if dmg:IsExplosionDamage() then
+            damage = damage / 2
 
         end
-        local pitch = math.random( 110, 120 ) + ( -damage / 4 )
-        self:EmitSound( "Computer.BulletImpact" )
-        self:EmitSound( "physics/metal/metal_canister_impact_hard" .. math.random( 1, 3 ) .. ".wav", 75, pitch, 1, CHAN_STATIC )
 
+        self:ShieldTakeDamage( damage )
+
+        return
     end
+
+    self.SpawnpointHealth = self.SpawnpointHealth - damage
+
+    self:OnDamagedFX()
 end
 
 function ENT:PlysAreFriendly( ply, otherPly )
@@ -538,22 +617,112 @@ function ENT:PlysAreFriendly( ply, otherPly )
 
 end
 
--- take no acf damage when we're above half health
+-- take no acf damage
 function ENT:ACF_PreDamage()
     return false
 
 end
 
--- Stubs from here on
-
-function ENT:SpawnpointPreTakeDamage() end
-
-function ENT:SpawnpointPostInitialize() end
-
-function ENT:SpawnpointThink() end
-
-function ENT:OnSpawnRemoved() end
+-- Stubs
 
 function ENT:PhysicsUpdate() end
 
 function ENT:PhysicsCollide() end
+
+-- shield stuff
+
+function ENT:SetupShield()
+    self:EmitSound( "npc/scanner/scanner_electric2.wav", 75, math.random( 120, 140 ), 1, CHAN_STATIC )
+    self:EmitSound( "weapons/physcannon/physcannon_charge.wav", 70, 130, 1, CHAN_STATIC )
+
+    self:SetShielded( true )
+    self:SetShieldHealth( 0 )
+    self.blockShieldHealthRegen = 0
+end
+
+function ENT:TeardownShield()
+    self:SetShielded( false )
+    self:SetShieldHealth( 0 )
+    self.blockShieldHealthRegen = 0
+end
+
+function ENT:ShieldThink()
+    local canThink = self:GetShieldOn()
+    if canThink then
+        if not self.spawnpointShieldSetupTime then
+            local setupTime = CurTime() + self:ShieldSetupTimeTaken()
+            self.spawnpointShieldSetupTime = setupTime
+            self:SetShieldSetupTime( setupTime )
+
+        elseif self.spawnpointShieldSetupTime < CurTime() then
+            if not self:GetShielded() then
+                self:SetupShield()
+
+            else
+                local currHealth = self:GetShieldHealth()
+                local maxHealth = self:MaxShieldHealth()
+                local blockRegen = self.blockShieldHealthRegen > CurTime()
+
+                if blockRegen then return end
+                if currHealth >= maxHealth then return end
+
+                -- regenerate
+                self:ShieldRegenFX()
+                self:ShieldTakeDamage( -self:ShieldHealthRegen() )
+
+            end
+        end
+    elseif not canThink then
+        if self:GetShielded() then
+            self:TeardownShield()
+            self:SetShieldSetupTime( 0 )
+            self.spawnpointShieldSetupTime = nil
+
+        end
+    end
+end
+
+function ENT:ShieldTakeDamage( dmg )
+    local oldHealth = self:GetShieldHealth()
+
+    local newHealth = oldHealth - dmg
+    newHealth = math.Clamp( newHealth, 0, self:MaxShieldHealth() )
+    newHealth = math.Round( newHealth )
+    self:SetShieldHealth( newHealth )
+
+    if newHealth < oldHealth then
+        self.blockShieldHealthRegen = CurTime() + 10
+
+    end
+    -- shield just broke
+    if newHealth == 0 then
+        self:EmitSound( "weapons/physcannon/energy_sing_explosion2.wav", 75, math.random( 110, 120 ) )
+        self:EmitSound( "npc/turret_floor/die.wav", 75, math.random( 140, 150 ), 1, CHAN_STATIC )
+        util.ScreenShake( self:WorldSpaceCenter(), 10, 10, 0.5, 1500 )
+
+    end
+end
+
+
+local function checkShields()
+    for _, spawn in ipairs( ents.FindByClass( "sent_spawnpoint" ) ) do
+        local creator = spawn:GetCreator()
+        print( creator )
+        if IsValid( creator ) then
+            local inPvp = creator:IsInPvp()
+            if inPvp then
+                spawn:SetShieldOn( true )
+                print("A")
+            else
+                spawn:SetShieldOn( false )
+                print("B")
+            end
+        end
+    end
+end
+
+hook.Add( "CFC_MobileSpawn_CreatedSpawn", "mobileSpawns_CheckShields", checkShields )
+
+hook.Add( "CFC_PvP_PlayerExitPvp", "mobileSpawns_TurnOffShields", checkShields )
+
+hook.Add( "CFC_PvP_PlayerEnterPvp", "mobileSpawns_TurnOnShields", checkShields )
