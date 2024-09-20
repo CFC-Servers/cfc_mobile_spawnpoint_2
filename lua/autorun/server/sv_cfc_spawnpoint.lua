@@ -31,6 +31,7 @@ local heightOfSpawnPointPlusOne = 16
 
 util.AddNetworkString( "CFC_SpawnPoints_CreationDenied" )
 util.AddNetworkString( "CFC_SpawnPoints_LinkDenySound" )
+util.AddNetworkString( "CFC_SpawnPoints_CreationCooldownOver" )
 
 
 ----- SETUP -----
@@ -80,11 +81,24 @@ hook.Add( "PlayerDisconnected", "UnlinkPlayerOnDisconnect", function( ply )
     spawnPoint:UnlinkPlayer( ply )
 end )
 
-hook.Add( "CFC_SpawnPoints_DenyCreation", "CFC_SpawnPoints_EnforcePlayerSpawnCooldown", function( ply )
+hook.Add( "CFC_SpawnPoints_DenyCreation", "CFC_SpawnPoints_EnforcePlayerSpawnCooldown", function( ply, data )
     local cooldownEndTime = ply:GetNWFloat( "CFC_SpawnPoints_SpawnCooldownEndTime", 0 )
 
-    if CurTime() < cooldownEndTime then
+    local timeLeft = cooldownEndTime - CurTime()
+
+    if timeLeft > 0 then
         if hook.Run( "CFC_SpawnPoints_IgnorePlayerSpawnCooldown", ply ) then return end
+
+        -- If this cooldown stops a creation attempt, notify the player when it's over.
+        timer.Create( "CFC_SpawnPoints_NotifyPlayerSpawnCooldownOver_" .. ply:SteamID(), timeLeft + 0.1, 1, function()
+            if not IsValid( ply ) then return end
+
+            -- Don't notify if something else is still blocking spawnpoint creation.
+            if not hook.Run( "CFC_SpawnPoints_DenyCreation", ply, data ) then
+                net.Start( "CFC_SpawnPoints_CreationCooldownOver" )
+                net.Send( ply )
+            end
+        end )
 
         return "You must wait before creating a new Spawn Point"
     end
