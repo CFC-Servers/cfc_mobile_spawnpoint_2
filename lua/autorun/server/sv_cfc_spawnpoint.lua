@@ -100,7 +100,7 @@ hook.Add( "CFC_SpawnPoints_DenyCreation", "CFC_SpawnPoints_EnforcePlayerSpawnCoo
             end
         end )
 
-        return "You must wait before creating a new Spawn Point"
+        return "You must wait " .. math.ceil( timeLeft ) .. " second(s) before creating a new Spawn Point"
     end
 end )
 
