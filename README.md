@@ -10,7 +10,7 @@ CFC's refactor of the CFC Mobile SpawnPoint 2
 | cfc_spawnpoints_cooldown_on_ply_spawn | When a player spawns, they must wait this many seconds before they can create/link spawn points. | 10 |
 | cfc_spawnpoints_cooldown_on_point_spawn | When a spawn point is created, it cannot be linked to for this many seconds. | 5 |
 | cfc_spawnpoints_removal_window | Player/point cooldowns only apply if a previous spawn point was removed in the past X seconds. 0 to not alter cooldowns. | 30 |
-| cfc_spawnpoints_interact_cooldown | Per-player interaction cooldown for spawn points. | 1 |
+| cfc_spawnpoints_interact_cooldown | Per-player interaction cooldown for spawn points. | 0.5 |
 
 
 ## Shared Functions
