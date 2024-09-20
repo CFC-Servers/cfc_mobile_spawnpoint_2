@@ -5,6 +5,8 @@ local MESSAGE_BOTTOM_HEIGHT = 20
 local MESSAGE_CRISPNESS = 4
 local MESSAGE_FONT_SIZE = 24 * MESSAGE_CRISPNESS
 local MESSAGE_SCALE = 0.25 / MESSAGE_CRISPNESS
+local MESSAGE_OUTLINE_SIZE = 0.5 * MESSAGE_CRISPNESS
+local MESSAGE_OUTLINE_COLOR = Color( 0, 0, 0 )
 
 local MESSAGE_TEXT_POINT_SPAWN_COOLDOWN = "CANNOT LINK\n\nWAIT FOR\nTHE SPAWN POINT\nTO CHARGE"
 local MESSAGE_COLOR_POINT_SPAWN_COOLDOWN = Color( 255, 0, 0 )
@@ -99,7 +101,7 @@ function ENT:DrawMessage( text, color, zOffset )
         local y = 0
 
         for _, line in ipairs( lines ) do
-            draw.SimpleText( line, "CFC_SpawnPoints_3D2DMessage", 0, y, color, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+            draw.SimpleTextOutlined( line, "CFC_SpawnPoints_3D2DMessage", 0, y, color, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, MESSAGE_OUTLINE_SIZE, MESSAGE_OUTLINE_COLOR )
             y = y + MESSAGE_FONT_SIZE
         end
     cam.End3D2D()
