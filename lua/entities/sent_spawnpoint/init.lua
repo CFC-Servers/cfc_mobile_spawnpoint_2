@@ -27,28 +27,7 @@ local function miniSpark( pos, scale )
 
 end
 
-local function isFriendly( ply, otherPly )
-    if ply == otherPly then return true end
-
-    -- simple player squads
-    if ply.GetSquadID then
-        local plysId = ply:GetSquadID()
-        if plysId == -1 then return false end
-
-        local othersId = otherPly:GetSquadID()
-        if othersId == -1 then return false end
-
-        print( plysId, othersId )
-
-        if plysId == othersId then return true end
-
-    end
-
-    return false
-
-end
-
-function unlinkPlayerFromSpawnPoint( ply, spawnPoint )
+local function unlinkPlayerFromSpawnPoint( ply, spawnPoint )
     if not IsValid( ply ) then return end
     if not IsValid( spawnPoint ) then return end
 
@@ -58,10 +37,10 @@ function unlinkPlayerFromSpawnPoint( ply, spawnPoint )
 
 end
 
-function linkPlayerToSpawnPoint( ply, spawnPoint )
+local function linkPlayerToSpawnPoint( ply, spawnPoint )
     if not IsValid( ply ) then return end
     if not IsValid( spawnPoint ) then return end
-    if not isFriendly( spawnPoint:GetCreator(), ply ) then return end
+    if not spawnPoint:PlysAreFriendly( spawnPoint:GetCreator(), ply ) then return end
     if IsValid( ply.LinkedSpawnPoint ) then
         unlinkPlayerFromSpawnPoint( ply, ply.LinkedSpawnPoint )
 
@@ -73,7 +52,7 @@ function linkPlayerToSpawnPoint( ply, spawnPoint )
     return true
 end
 
-function unlinkAllPlayersFromSpawnPoint( spawnPoint, excludedPlayers, reason )
+local function unlinkAllPlayersFromSpawnPoint( spawnPoint, excludedPlayers, reason )
     if not IsValid( spawnPoint ) then return end
 
     reason = reason or "You've been unlinked from a Spawn Point!"
@@ -538,6 +517,25 @@ function ENT:OnTakeDamage( dmg )
         self:EmitSound( "physics/metal/metal_canister_impact_hard" .. math.random( 1, 3 ) .. ".wav", 75, pitch, 1, CHAN_STATIC )
 
     end
+end
+
+function ENT:PlysAreFriendly( ply, otherPly )
+    if ply == otherPly then return true end
+
+    -- simple player squads
+    if ply.GetSquadID then
+        local plysId = ply:GetSquadID()
+        if plysId == -1 then return false end
+
+        local othersId = otherPly:GetSquadID()
+        if othersId == -1 then return false end
+
+        if plysId == othersId then return true end
+
+    end
+
+    return false
+
 end
 
 -- take no acf damage when we're above half health

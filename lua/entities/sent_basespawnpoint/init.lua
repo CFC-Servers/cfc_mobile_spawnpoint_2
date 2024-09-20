@@ -174,7 +174,7 @@ function ENT:InterferingThink( currHealth )
         local distSqr = interferenceDist()^2
         local tooCloseSpawns = {}
         for _, currSpawn in ipairs( spawns ) do
-            if currSpawn ~= self and currSpawn:GetPos():DistToSqr( myPos ) < distSqr then
+            if currSpawn ~= self and currSpawn:GetPos():DistToSqr( myPos ) < distSqr and self:PlysAreFriendly( self:GetCreator(), currSpawn:GetCreator() ) then
                 table.insert( tooCloseSpawns, currSpawn )
 
             end

@@ -22,7 +22,6 @@ local function playerSpawnedEnt( ply, ent )
     local class = ent:GetClass()
 
     if not limits[ class ] then return end
-    print( class, ent )
 
     ply:AddCount( class, ent )
 
