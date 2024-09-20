@@ -22,7 +22,7 @@ local REMOVAL_WINDOW = CreateConVar( "cfc_spawnpoints_removal_window", 30, { FCV
 --]]
 function CFC_SpawnPoints.IsFriendly( spawnPoint, ply )
     if not CPPI then
-        if spawnPoint:GetCreatingPlayer() == ply then return end
+        if spawnPoint:GetCreatingPlayer() == ply then return true end
 
         return false, "You can only link to your own Spawn Points."
     end
