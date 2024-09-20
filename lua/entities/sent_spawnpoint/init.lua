@@ -4,12 +4,17 @@ include( "shared.lua" )
 
 local COOLDOWN_ON_POINT_SPAWN
 local INTERACT_COOLDOWN
+local HEALTH_MAX
+local HEALTH_REGEN
+local HEALTH_REGEN_COOLDOWN
 
 local EFF_SPAWN_COLOR_ANG = Angle( 150, 150, 255 )
 local EFF_COOLDOWN_FINISHED_COLOR_ANG = Angle( 150, 255, 150 )
 local EFF_REMOVE_COLOR_ANG = Angle( 240, 70, 100 )
 local EFF_LINK_COLOR_ANG = Angle( 50, 255, 50 )
 local EFF_UNLINK_COLOR_ANG = Angle( 70, 0, 140 )
+
+local REGEN_SOUND = "ambient/levels/canals/manhack_machine_loop1.wav"
 
 
 ----- PRIVATE FUNCTIONS -----
@@ -91,6 +96,16 @@ function ENT:Initialize()
     self:SetUseType( SIMPLE_USE )
     self._linkedPlayers = {}
     self._interactCooldownEndTimes = {}
+    self._regenStartTime = 0
+    self._lastRegenTime = CurTime()
+    self._playingRegenSound = false
+
+    local maxHealth = HEALTH_MAX:GetInt()
+
+    if maxHealth > 0 then
+        self:SetMaxHealth( maxHealth )
+        self:SetHealth( maxHealth )
+    end
 
     local phys = self:GetPhysicsObject()
     if phys:IsValid() then
@@ -121,6 +136,8 @@ end
 function ENT:OnRemove()
     local atLeastOneLinked = false
     local now = CurTime()
+
+    self:StopSound( REGEN_SOUND )
 
     for ply in pairs( self._linkedPlayers ) do
         if IsValid( ply ) then
@@ -236,9 +253,65 @@ function ENT:UnlinkAllPlayersExcept( excludedPlayersLookup )
     end
 end
 
-function ENT:Think() end
+function ENT:Think()
+    local maxHealth = self:GetMaxHealth()
+    if maxHealth <= 0 then return end
 
-function ENT:OnTakeDamage() end
+    local regen = HEALTH_REGEN:GetFloat()
+    if regen <= 0 then return end
+
+    local now = CurTime()
+    if now <= self._regenStartTime then return end
+
+    local health = self:Health()
+    if health >= maxHealth then return end
+
+    local timeSince = now - self._lastRegenTime
+
+    health = math.min( health + regen * timeSince, maxHealth )
+
+    self:SetHealth( health )
+    self._lastRegenTime = now
+
+    if health >= maxHealth then
+        if self._playingRegenSound then
+            self._playingRegenSound = false
+            self:StopSound( REGEN_SOUND )
+            self:EmitSound( "ambient/levels/prison/radio_random12.wav", 80, 100 )
+        end
+    else
+        if not self._playingRegenSound then
+            self._playingRegenSound = true
+            self:EmitSound( REGEN_SOUND, 80, 105 )
+        end
+    end
+end
+
+function ENT:OnTakeDamage( dmg )
+    if self:GetMaxHealth() <= 0 then return end
+
+    local health = self:Health()
+    local newHealth = health - dmg:GetDamage()
+
+    if self._playingRegenSound then
+        self._playingRegenSound = false
+        self:StopSound( REGEN_SOUND )
+    end
+
+    if newHealth <= 0 then
+        self:Remove()
+    else
+        local regenStartTime = CurTime() + HEALTH_REGEN_COOLDOWN:GetFloat()
+
+        self:SetHealth( newHealth )
+        self._regenStartTime = regenStartTime
+        self._lastRegenTime = regenStartTime
+    end
+end
+
+function ENT:ACF_PreDamage()
+    return false -- Block ACF damage.
+end
 
 function ENT:PhysicsUpdate() end
 
@@ -250,6 +323,9 @@ function ENT:PhysicsCollide() end
 local function localizeConvars()
     COOLDOWN_ON_POINT_SPAWN = GetConVar( "cfc_spawnpoints_cooldown_on_point_spawn" )
     INTERACT_COOLDOWN = GetConVar( "cfc_spawnpoints_interact_cooldown" )
+    HEALTH_MAX = GetConVar( "cfc_spawnpoints_health_max" )
+    HEALTH_REGEN = GetConVar( "cfc_spawnpoints_health_regen" )
+    HEALTH_REGEN_COOLDOWN = GetConVar( "cfc_spawnpoints_health_regen_cooldown" )
 end
 
 

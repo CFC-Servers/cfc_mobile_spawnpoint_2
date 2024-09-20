@@ -8,6 +8,9 @@ CreateConVar( "sbox_maxsent_spawnpoint", 1, { FCVAR_ARCHIVE, FCVAR_REPLICATED },
 CreateConVar( "cfc_spawnpoints_cooldown_on_ply_spawn", 10, { FCVAR_ARCHIVE, FCVAR_REPLICATED }, "When a player spawns, they must wait this many seconds before they can create/link spawn points.", 0, 1000 )
 CreateConVar( "cfc_spawnpoints_cooldown_on_point_spawn", 5, { FCVAR_ARCHIVE, FCVAR_REPLICATED }, "When a spawn point is created, it cannot be linked to for this many seconds.", 0, 1000 )
 CreateConVar( "cfc_spawnpoints_interact_cooldown", 0.5, { FCVAR_ARCHIVE, FCVAR_REPLICATED }, "Per-player interaction cooldown for spawn points.", 0, 1000 )
+CreateConVar( "cfc_spawnpoints_health_max", 1500, { FCVAR_ARCHIVE, FCVAR_REPLICATED }, "Max health of spawnpoints. 0 to disable.", 0, 10000 )
+CreateConVar( "cfc_spawnpoints_health_regen", 200, { FCVAR_ARCHIVE, FCVAR_REPLICATED }, "Health regenerated per second by spawnpoints. 0 to disable.", 0, 10000 )
+CreateConVar( "cfc_spawnpoints_health_regen_cooldown", 10, { FCVAR_ARCHIVE, FCVAR_REPLICATED }, "If a spawnpoint takes damage, it must wait this long before it can start regenerating. 0 to disable.", 0, 10000 )
 
 local REMOVAL_WINDOW = CreateConVar( "cfc_spawnpoints_removal_window", 30, { FCVAR_ARCHIVE, FCVAR_REPLICATED }, "Player/point cooldowns only apply if a previous spawn point was removed in the past X seconds. 0 to not alter cooldowns.", 0, 1000 )
 

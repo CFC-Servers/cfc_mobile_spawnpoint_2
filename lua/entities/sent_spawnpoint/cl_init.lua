@@ -14,6 +14,9 @@ local MESSAGE_COLOR_PLAYER_SPAWN_COOLDOWN = Color( 255, 0, 0 )
 local MESSAGE_TEXT_LINK = "PRESS E\nTO LINK"
 local MESSAGE_COLOR_LINK = Color( 250, 255, 0 )
 
+local MESSAGE_ZOFFSET_HEALTH = -1 * MESSAGE_FONT_SIZE
+local MESSAGE_COLOR_HEALTH = Color( 0, 180, 255 )
+
 surface.CreateFont( "CFC_SpawnPoints_3D2DMessage", {
     font = "Arial",
     size = MESSAGE_FONT_SIZE,
@@ -53,8 +56,19 @@ end
 function ENT:TryDrawMessage()
     local ply = LocalPlayer()
 
-    if ply:GetNWEntity( "CFC_SpawnPoints_LinkedSpawnPoint" ) == self then return end
     if EyePos():Distance( self:GetPos() ) > MESSAGE_DRAW_DISTANCE then return end
+
+    -- Health message
+    local maxHealth = self:GetMaxHealth()
+
+    if maxHealth > 0 then
+        local health = self:Health()
+
+        self:DrawMessage( "INTEGRITY: " .. math.Round( health ) .. "/" .. maxHealth, MESSAGE_COLOR_HEALTH, MESSAGE_ZOFFSET_HEALTH )
+    end
+
+    -- Link message
+    if ply:GetNWEntity( "CFC_SpawnPoints_LinkedSpawnPoint" ) == self then return end
     if not CFC_SpawnPoints.IsFriendly( self, ply ) then return end
 
     local now = CurTime()
@@ -68,11 +82,12 @@ function ENT:TryDrawMessage()
     end
 end
 
-function ENT:DrawMessage( text, color )
+function ENT:DrawMessage( text, color, zOffset )
     local lines = string.Split( text, "\n" )
     local lineCount = #lines
+    zOffset = zOffset or 0
 
-    local pos = self:GetPos() + Vector( 0, 0, MESSAGE_BOTTOM_HEIGHT + MESSAGE_FONT_SIZE * MESSAGE_SCALE * lineCount )
+    local pos = self:GetPos() + Vector( 0, 0, MESSAGE_BOTTOM_HEIGHT + ( MESSAGE_FONT_SIZE + zOffset ) * MESSAGE_SCALE * lineCount )
     local ang = ( pos - EyePos() ):Angle()
 
     ang[1] = 0
