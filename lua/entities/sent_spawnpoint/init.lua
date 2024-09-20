@@ -247,10 +247,14 @@ function ENT:PhysicsCollide() end
 
 ----- SETUP -----
 
+local function localizeConvars()
+    COOLDOWN_ON_POINT_SPAWN = GetConVar( "cfc_spawnpoints_cooldown_on_point_spawn" )
+    INTERACT_COOLDOWN = GetConVar( "cfc_spawnpoints_interact_cooldown" )
+end
+
+
 -- Needed to prevent dupes from bypassing the spawn limit
 duplicator.RegisterEntityClass( "sent_spawnpoint", makeSpawnPoint, "Data" )
 
-hook.Add( "InitPostEntity", "CFC_SpawnPoints_SentSpawnPoint_Setup", function()
-    COOLDOWN_ON_POINT_SPAWN = GetConVar( "cfc_spawnpoints_cooldown_on_point_spawn" )
-    INTERACT_COOLDOWN = GetConVar( "cfc_spawnpoints_interact_cooldown" )
-end )
+hook.Add( "InitPostEntity", "CFC_SpawnPoints_SentSpawnPoint_Setup", localizeConvars )
+if Entity( 0 ) ~= NULL then localizeConvars() end -- Work with auto-refresh

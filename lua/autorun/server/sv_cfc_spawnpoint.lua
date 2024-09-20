@@ -35,9 +35,13 @@ util.AddNetworkString( "CFC_SpawnPoints_LinkDenySound" )
 
 ----- SETUP -----
 
-hook.Add( "InitPostEntity", "CFC_SpawnPoints_Setup", function()
+local function localizeConvars()
     COOLDOWN_ON_PLY_SPAWN = GetConVar( "cfc_spawnpoints_cooldown_on_ply_spawn" )
-end )
+end
+
+
+hook.Add( "InitPostEntity", "CFC_SpawnPoints_Setup", localizeConvars )
+if Entity( 0 ) ~= NULL then localizeConvars() end -- Work with auto-refresh
 
 hook.Add( "PlayerSpawn", "SpawnPointHook", function( ply )
     local spawnPoint = ply:GetNWEntity( "CFC_SpawnPoints_LinkedSpawnPoint" )
