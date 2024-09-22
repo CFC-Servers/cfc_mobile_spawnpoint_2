@@ -1,3 +1,5 @@
+resource.AddWorkshop( "3114959065" )
+
 local limits = {
     sent_spawnpoint = 1,
 
