@@ -292,7 +292,7 @@ end
 function ENT:ResetData()
     self:SetShielded( false )
     self:SetShieldHealth( 0 )
-    self:SetShieldOn( false )
+    self:SetShieldOn( true )
     self:SetShieldSetupTime( 0 )
 
 end
