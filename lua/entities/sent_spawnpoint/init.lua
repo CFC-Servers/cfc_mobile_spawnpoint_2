@@ -704,18 +704,19 @@ function ENT:ShieldTakeDamage( dmg )
 end
 
 
+-- TODO: replace/move hacky code below this 
+
+-- shields off in build
+-- restarts the countdown when players enter pvpmode too 
 local function checkShields()
     for _, spawn in ipairs( ents.FindByClass( "sent_spawnpoint" ) ) do
         local creator = spawn:GetCreator()
-        print( creator )
         if IsValid( creator ) then
             local inPvp = creator:IsInPvp()
             if inPvp then
                 spawn:SetShieldOn( true )
-                print("A")
             else
                 spawn:SetShieldOn( false )
-                print("B")
             end
         end
     end

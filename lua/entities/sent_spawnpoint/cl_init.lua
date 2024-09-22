@@ -80,9 +80,9 @@ function ENT:Think()
             local setupTimeTaken = self:ShieldSetupTimeTaken()
             self.settingUpSound1 = CreateSound( self, "ambient/levels/canals/manhack_machine_loop1.wav" )
             self.settingUpSound1:SetSoundLevel( 58 )
-            self.settingUpSound1:PlayEx( 0.5, 95 )
+            self.settingUpSound1:PlayEx( 0.5, 90 )
             self.settingUpSound1:ChangeVolume( 1, setupTimeTaken )
-            self.settingUpSound1:ChangePitch( 150, setupTimeTaken )
+            self.settingUpSound1:ChangePitch( 125, setupTimeTaken )
         end
     else
         if self.settingUpSound1 and self.settingUpSound1:IsPlaying() then
