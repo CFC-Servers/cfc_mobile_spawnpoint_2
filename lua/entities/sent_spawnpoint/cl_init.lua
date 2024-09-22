@@ -67,7 +67,7 @@ function ENT:TryDrawMessage()
     if maxHealth > 0 then
         local health = self:Health()
 
-        self:DrawMessage( "INTEGRITY: " .. math.Round( health ) .. "/" .. maxHealth, MESSAGE_COLOR_HEALTH, MESSAGE_ZOFFSET_HEALTH )
+        self:DrawMessage( "HEALTH: " .. math.Round( health ) .. "/" .. maxHealth, MESSAGE_COLOR_HEALTH, MESSAGE_ZOFFSET_HEALTH )
     end
 
     -- Link message
