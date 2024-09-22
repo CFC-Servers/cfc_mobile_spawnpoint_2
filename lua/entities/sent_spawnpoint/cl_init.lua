@@ -78,9 +78,9 @@ function ENT:Think()
     if setupTime > cur then
         if not self.settingUpSound1 or not self.settingUpSound1:IsPlaying() then
             local setupTimeTaken = self:ShieldSetupTimeTaken()
-            self.settingUpSound1 = CreateSound( self, "ambient/levels/canals/manhack_machine_loop1.wav" )
+            self.settingUpSound1 = CreateSound( self, "npc/roller/mine/combine_mine_active_loop1.wav" )
             self.settingUpSound1:SetSoundLevel( 58 )
-            self.settingUpSound1:PlayEx( 0.5, 90 )
+            self.settingUpSound1:PlayEx( 0.75, 90 )
             self.settingUpSound1:ChangeVolume( 1, setupTimeTaken )
             self.settingUpSound1:ChangePitch( 125, setupTimeTaken )
         end

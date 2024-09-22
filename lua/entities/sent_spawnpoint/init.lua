@@ -704,7 +704,7 @@ function ENT:ShieldTakeDamage( dmg )
 end
 
 
--- TODO: replace/move hacky code below this 
+--[[ TODO: replace/move hacky code below this 
 
 -- shields off in build
 -- restarts the countdown when players enter pvpmode too 
@@ -727,3 +727,4 @@ hook.Add( "CFC_MobileSpawn_CreatedSpawn", "mobileSpawns_CheckShields", checkShie
 hook.Add( "CFC_PvP_PlayerExitPvp", "mobileSpawns_TurnOffShields", checkShields )
 
 hook.Add( "CFC_PvP_PlayerEnterPvp", "mobileSpawns_TurnOnShields", checkShields )
+--]]
