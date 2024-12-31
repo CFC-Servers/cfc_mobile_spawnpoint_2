@@ -26,6 +26,8 @@ local MESSAGE_COLOR_HEALTH_BAR_BG_ENEMY = Color( 70, 0, 0 )
 local MESSAGE_BAR_WIDTH = 100 * MESSAGE_CRISPNESS
 local MESSAGE_BAR_HEIGHT = 20 * MESSAGE_CRISPNESS
 
+local FRIENDLINESS_CACHE_COOLDOWN = 1 -- Friendliness is cached periodically while being drawn.
+
 surface.CreateFont( "CFC_SpawnPoints_3D2DMessage", {
     font = "Arial",
     size = MESSAGE_FONT_SIZE,
@@ -55,6 +57,9 @@ end
 ----- ENTITY METHODS -----
 
 function ENT:Initialize()
+    self._inDrawDistance = false
+    self._isFriendlyCache = false
+    self._nextFriendlinessCacheTime = 0
 end
 
 function ENT:Draw()
@@ -65,15 +70,29 @@ end
 function ENT:TryDrawMessage()
     local ply = LocalPlayer()
 
-    if EyePos():Distance( self:GetPos() ) > MESSAGE_DRAW_DISTANCE then return end
+    -- Draw distance check.
+    if EyePos():Distance( self:GetPos() ) > MESSAGE_DRAW_DISTANCE then
+        if self._inDrawDistance then -- Leaving draw distance
+            self._inDrawDistance = false
+        end
+
+        return
+    end
+
+    if not self._inDrawDistance then -- Entering draw distance
+        self._inDrawDistance = true
+        self:UpdateFriendlinessCache( true ) -- Force update on enter
+    else
+        self:UpdateFriendlinessCache( false ) -- Periodic update while in draw distance
+    end
 
     -- Health message
     local maxHealth = self:GetMaxHealth()
+    local isFriendly = self._isFriendlyCache
 
     if maxHealth > 0 then
         local health = self:Health()
         local healthFrac = health / maxHealth
-        local isFriendly = CFC_SpawnPoints.IsFriendly( self, ply )
 
         if healthFrac < 1 then
             -- Health bar background
@@ -89,8 +108,8 @@ function ENT:TryDrawMessage()
     end
 
     -- Link message
+    if not isFriendly then return end
     if ply:GetNWEntity( "CFC_SpawnPoints_LinkedSpawnPoint" ) == self then return end
-    if not CFC_SpawnPoints.IsFriendly( self, ply ) then return end
 
     local now = CurTime()
 
@@ -139,4 +158,15 @@ function ENT:DrawBar( frac, width, height, color, zOffset )
         surface.SetDrawColor( color )
         surface.DrawRect( -width / 2, -height / 2, width * frac, height )
     cam.End3D2D()
+end
+
+function ENT:UpdateFriendlinessCache( force )
+    if not force then
+        local now = CurTime()
+        if now < self._nextFriendlinessCacheTime then return end
+
+        self._nextFriendlinessCacheTime = now + FRIENDLINESS_CACHE_COOLDOWN
+    end
+
+    self._isFriendlyCache = CFC_SpawnPoints.IsFriendly( self, LocalPlayer() )
 end
