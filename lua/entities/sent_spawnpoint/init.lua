@@ -149,6 +149,8 @@ function ENT:OnRemove()
 
     if atLeastOneLinked then
         self:EmitSound( "npc/roller/mine/rmine_blades_out2.wav", 90, 90 )
+        self:EmitSound( "ambient/machines/catapult_throw.wav", 90, 80 )
+        self:EmitSound( "ambient/machines/catapult_throw.wav", 90, 80 )
     end
 
     doPointEffect( self, EFF_REMOVE_COLOR_ANG )
