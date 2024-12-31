@@ -1,6 +1,7 @@
 include( "shared.lua" )
 
 local MESSAGE_DRAW_DISTANCE = 500
+local MESSAGE_FADE_START_DISTANCE = 300 -- 0 to disable fading
 local MESSAGE_BOTTOM_HEIGHT = 20
 local MESSAGE_CRISPNESS = 4
 local MESSAGE_FONT_SIZE = 20 * MESSAGE_CRISPNESS
@@ -69,9 +70,10 @@ end
 
 function ENT:TryDrawMessage()
     local ply = LocalPlayer()
+    local eyeDist = EyePos():Distance( self:GetPos() )
 
     -- Draw distance check.
-    if EyePos():Distance( self:GetPos() ) > MESSAGE_DRAW_DISTANCE then
+    if eyeDist > MESSAGE_DRAW_DISTANCE then
         if self._inDrawDistance then -- Leaving draw distance
             self._inDrawDistance = false
         end
@@ -89,6 +91,13 @@ function ENT:TryDrawMessage()
     -- Health message
     local maxHealth = self:GetMaxHealth()
     local isFriendly = self._isFriendlyCache
+    local alpha = 255
+
+    if MESSAGE_FADE_START_DISTANCE ~= 0 and eyeDist > MESSAGE_FADE_START_DISTANCE then
+        local farFrac = ( eyeDist - MESSAGE_FADE_START_DISTANCE ) / ( MESSAGE_DRAW_DISTANCE - MESSAGE_FADE_START_DISTANCE )
+
+        alpha = ( 1 - farFrac ) * 255
+    end
 
     if maxHealth > 0 then
         local health = self:Health()
@@ -98,13 +107,13 @@ function ENT:TryDrawMessage()
             -- Health bar background
             local barColor = isFriendly and MESSAGE_COLOR_HEALTH_BAR_BG_FRIENDLY or MESSAGE_COLOR_HEALTH_BAR_BG_ENEMY
 
-            self:DrawBar( 1, MESSAGE_BAR_WIDTH, MESSAGE_BAR_HEIGHT, barColor, MESSAGE_ZOFFSET_HEALTH )
+            self:DrawBar( 1, MESSAGE_BAR_WIDTH, MESSAGE_BAR_HEIGHT, barColor, alpha, MESSAGE_ZOFFSET_HEALTH )
         end
 
         local barColor = isFriendly and MESSAGE_COLOR_HEALTH_BAR_FRIENDLY or MESSAGE_COLOR_HEALTH_BAR_ENEMY
 
-        self:DrawBar( healthFrac, MESSAGE_BAR_WIDTH, MESSAGE_BAR_HEIGHT, barColor, MESSAGE_ZOFFSET_HEALTH )
-        self:DrawMessage( tostring( math.Round( health ) ), MESSAGE_COLOR_HEALTH, MESSAGE_ZOFFSET_HEALTH )
+        self:DrawBar( healthFrac, MESSAGE_BAR_WIDTH, MESSAGE_BAR_HEIGHT, barColor, alpha, MESSAGE_ZOFFSET_HEALTH )
+        self:DrawMessage( tostring( math.Round( health ) ), MESSAGE_COLOR_HEALTH, alpha, MESSAGE_ZOFFSET_HEALTH )
     end
 
     -- Link message
@@ -114,21 +123,28 @@ function ENT:TryDrawMessage()
     local now = CurTime()
 
     if shouldShowPointSpawnCooldown( self, ply, now ) then
-        self:DrawMessage( MESSAGE_TEXT_POINT_SPAWN_COOLDOWN, MESSAGE_COLOR_POINT_SPAWN_COOLDOWN )
+        self:DrawMessage( MESSAGE_TEXT_POINT_SPAWN_COOLDOWN, MESSAGE_COLOR_POINT_SPAWN_COOLDOWN, alpha )
     elseif shouldShowPlayerSpawnCooldown( self, ply, now ) then
-        self:DrawMessage( MESSAGE_TEXT_PLAYER_SPAWN_COOLDOWN, MESSAGE_COLOR_PLAYER_SPAWN_COOLDOWN )
+        self:DrawMessage( MESSAGE_TEXT_PLAYER_SPAWN_COOLDOWN, MESSAGE_COLOR_PLAYER_SPAWN_COOLDOWN, alpha )
     else
-        self:DrawMessage( MESSAGE_TEXT_LINK, MESSAGE_COLOR_LINK )
+        self:DrawMessage( MESSAGE_TEXT_LINK, MESSAGE_COLOR_LINK, alpha )
     end
 end
 
-function ENT:DrawMessage( text, color, zOffset )
+function ENT:DrawMessage( text, color, alpha, zOffset )
     local lines = string.Split( text, "\n" )
     local lineCount = #lines
     zOffset = zOffset or 0
 
     local pos = self:GetPos() + Vector( 0, 0, MESSAGE_BOTTOM_HEIGHT + ( MESSAGE_FONT_SIZE + zOffset ) * MESSAGE_SCALE * lineCount )
     local ang = ( pos - EyePos() ):Angle()
+
+    if alpha then
+        color.a = alpha
+        MESSAGE_OUTLINE_COLOR.a = alpha
+    else
+        MESSAGE_OUTLINE_COLOR.a = color.a
+    end
 
     ang[1] = 0
     ang:RotateAroundAxis( ang:Up(), -90 )
@@ -144,11 +160,15 @@ function ENT:DrawMessage( text, color, zOffset )
     cam.End3D2D()
 end
 
-function ENT:DrawBar( frac, width, height, color, zOffset )
+function ENT:DrawBar( frac, width, height, color, alpha, zOffset )
     zOffset = zOffset or 0
 
     local pos = self:GetPos() + Vector( 0, 0, MESSAGE_BOTTOM_HEIGHT + ( MESSAGE_FONT_SIZE + zOffset ) * MESSAGE_SCALE )
     local ang = ( pos - EyePos() ):Angle()
+
+    if alpha then
+        color.a = alpha
+    end
 
     ang[1] = 0
     ang:RotateAroundAxis( ang:Up(), -90 )
