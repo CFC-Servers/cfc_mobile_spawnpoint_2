@@ -26,7 +26,7 @@ local MESSAGE_COLOR_HEALTH_BAR_BG_ENEMY = Color( 70, 0, 0 )
 local MESSAGE_BAR_WIDTH = 100 * MESSAGE_CRISPNESS
 local MESSAGE_BAR_HEIGHT = 20 * MESSAGE_CRISPNESS
 
-local FRIENDLINESS_CACHE_COOLDOWN = 1 -- Friendliness is cached periodically while being drawn.
+local FRIENDLINESS_CACHE_COOLDOWN = 1 -- Friendliness is cached periodically while within draw distance.
 
 surface.CreateFont( "CFC_SpawnPoints_3D2DMessage", {
     font = "Arial",
