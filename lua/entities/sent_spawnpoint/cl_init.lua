@@ -18,7 +18,11 @@ local MESSAGE_TEXT_LINK = "PRESS E"
 local MESSAGE_COLOR_LINK = Color( 250, 255, 0 )
 
 local MESSAGE_ZOFFSET_HEALTH = -1 * MESSAGE_FONT_SIZE
-local MESSAGE_COLOR_HEALTH = Color( 0, 180, 255 )
+local MESSAGE_COLOR_HEALTH = Color( 255, 255, 255 )
+local MESSAGE_COLOR_HEALTH_BAR = Color( 0, 180, 255 )
+local MESSAGE_COLOR_HEALTH_BAR_BG = Color( 0, 50, 70 )
+local MESSAGE_BAR_WIDTH = 100 * MESSAGE_CRISPNESS
+local MESSAGE_BAR_HEIGHT = 20 * MESSAGE_CRISPNESS
 
 surface.CreateFont( "CFC_SpawnPoints_3D2DMessage", {
     font = "Arial",
@@ -66,8 +70,15 @@ function ENT:TryDrawMessage()
 
     if maxHealth > 0 then
         local health = self:Health()
+        local healthFrac = health / maxHealth
 
-        self:DrawMessage( "HEALTH: " .. math.Round( health ) .. "/" .. maxHealth, MESSAGE_COLOR_HEALTH, MESSAGE_ZOFFSET_HEALTH )
+        if healthFrac < 1 then
+            -- Health bar background
+            self:DrawBar( 1, MESSAGE_BAR_WIDTH, MESSAGE_BAR_HEIGHT, MESSAGE_COLOR_HEALTH_BAR_BG, MESSAGE_ZOFFSET_HEALTH )
+        end
+
+        self:DrawBar( healthFrac, MESSAGE_BAR_WIDTH, MESSAGE_BAR_HEIGHT, MESSAGE_COLOR_HEALTH_BAR, MESSAGE_ZOFFSET_HEALTH )
+        self:DrawMessage( tostring( math.Round( health ) ), MESSAGE_COLOR_HEALTH, MESSAGE_ZOFFSET_HEALTH )
     end
 
     -- Link message
@@ -104,5 +115,21 @@ function ENT:DrawMessage( text, color, zOffset )
             draw.SimpleTextOutlined( line, "CFC_SpawnPoints_3D2DMessage", 0, y, color, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, MESSAGE_OUTLINE_SIZE, MESSAGE_OUTLINE_COLOR )
             y = y + MESSAGE_FONT_SIZE
         end
+    cam.End3D2D()
+end
+
+function ENT:DrawBar( frac, width, height, color, zOffset )
+    zOffset = zOffset or 0
+
+    local pos = self:GetPos() + Vector( 0, 0, MESSAGE_BOTTOM_HEIGHT + ( MESSAGE_FONT_SIZE + zOffset ) * MESSAGE_SCALE )
+    local ang = ( pos - EyePos() ):Angle()
+
+    ang[1] = 0
+    ang:RotateAroundAxis( ang:Up(), -90 )
+    ang:RotateAroundAxis( ang:Forward(), 90 )
+
+    cam.Start3D2D( pos, ang, MESSAGE_SCALE )
+        surface.SetDrawColor( color )
+        surface.DrawRect( -width / 2, -height / 2, width * frac, height )
     cam.End3D2D()
 end
