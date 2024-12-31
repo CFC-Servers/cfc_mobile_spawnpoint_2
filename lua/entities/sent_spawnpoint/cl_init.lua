@@ -19,8 +19,10 @@ local MESSAGE_COLOR_LINK = Color( 250, 255, 0 )
 
 local MESSAGE_ZOFFSET_HEALTH = -1 * MESSAGE_FONT_SIZE
 local MESSAGE_COLOR_HEALTH = Color( 255, 255, 255 )
-local MESSAGE_COLOR_HEALTH_BAR = Color( 0, 180, 255 )
-local MESSAGE_COLOR_HEALTH_BAR_BG = Color( 0, 50, 70 )
+local MESSAGE_COLOR_HEALTH_BAR_FRIENDLY = Color( 0, 180, 255 )
+local MESSAGE_COLOR_HEALTH_BAR_BG_FRIENDLY = Color( 0, 50, 70 )
+local MESSAGE_COLOR_HEALTH_BAR_ENEMY = Color( 255, 0, 0 )
+local MESSAGE_COLOR_HEALTH_BAR_BG_ENEMY = Color( 70, 0, 0 )
 local MESSAGE_BAR_WIDTH = 100 * MESSAGE_CRISPNESS
 local MESSAGE_BAR_HEIGHT = 20 * MESSAGE_CRISPNESS
 
@@ -71,13 +73,18 @@ function ENT:TryDrawMessage()
     if maxHealth > 0 then
         local health = self:Health()
         local healthFrac = health / maxHealth
+        local isFriendly = CFC_SpawnPoints.IsFriendly( self, ply )
 
         if healthFrac < 1 then
             -- Health bar background
-            self:DrawBar( 1, MESSAGE_BAR_WIDTH, MESSAGE_BAR_HEIGHT, MESSAGE_COLOR_HEALTH_BAR_BG, MESSAGE_ZOFFSET_HEALTH )
+            local barColor = isFriendly and MESSAGE_COLOR_HEALTH_BAR_BG_FRIENDLY or MESSAGE_COLOR_HEALTH_BAR_BG_ENEMY
+
+            self:DrawBar( 1, MESSAGE_BAR_WIDTH, MESSAGE_BAR_HEIGHT, barColor, MESSAGE_ZOFFSET_HEALTH )
         end
 
-        self:DrawBar( healthFrac, MESSAGE_BAR_WIDTH, MESSAGE_BAR_HEIGHT, MESSAGE_COLOR_HEALTH_BAR, MESSAGE_ZOFFSET_HEALTH )
+        local barColor = isFriendly and MESSAGE_COLOR_HEALTH_BAR_FRIENDLY or MESSAGE_COLOR_HEALTH_BAR_ENEMY
+
+        self:DrawBar( healthFrac, MESSAGE_BAR_WIDTH, MESSAGE_BAR_HEIGHT, barColor, MESSAGE_ZOFFSET_HEALTH )
         self:DrawMessage( tostring( math.Round( health ) ), MESSAGE_COLOR_HEALTH, MESSAGE_ZOFFSET_HEALTH )
     end
 
