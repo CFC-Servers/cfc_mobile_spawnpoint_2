@@ -49,7 +49,8 @@ if Entity( 0 ) ~= NULL then localizeConvars() end -- Work with auto-refresh
 
 hook.Add( "PlayerSpawn", "SpawnPointHook", function( ply )
     local spawnPoint = CFC_SpawnPoints.GetLinkedSpawnPoint( ply )
-    if not spawnPoint or not spawnPoint:IsValid() then return end
+    if not IsValid( spawnPoint ) then return end
+
     if not spawnPoint:IsInWorld() then
         ply:ChatPrint( "Your linked spawn point is in an invalid location" )
         return
