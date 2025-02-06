@@ -32,6 +32,9 @@ local heightOfSpawnPointPlusOne = 16
 util.AddNetworkString( "CFC_SpawnPoints_CreationDenied" )
 util.AddNetworkString( "CFC_SpawnPoints_LinkDenySound" )
 util.AddNetworkString( "CFC_SpawnPoints_CreationCooldownOver" )
+util.AddNetworkString( "CFC_SpawnPoints_SetSpawnCooldownEndTime" )
+util.AddNetworkString( "CFC_SpawnPoints_SetLastRemovedTime" )
+util.AddNetworkString( "CFC_SpawnPoints_SetLinkedSpawnPoint" )
 
 
 ----- SETUP -----
@@ -45,7 +48,7 @@ hook.Add( "InitPostEntity", "CFC_SpawnPoints_Setup", localizeConvars )
 if Entity( 0 ) ~= NULL then localizeConvars() end -- Work with auto-refresh
 
 hook.Add( "PlayerSpawn", "SpawnPointHook", function( ply )
-    local spawnPoint = ply:GetNWEntity( "CFC_SpawnPoints_LinkedSpawnPoint" )
+    local spawnPoint = CFC_SpawnPoints.GetLinkedSpawnPoint( ply )
     if not spawnPoint or not spawnPoint:IsValid() then return end
     if not spawnPoint:IsInWorld() then
         ply:ChatPrint( "Your linked spawn point is in an invalid location" )
@@ -59,7 +62,7 @@ end )
 hook.Add( "PlayerSpawn", "CFC_SpawnPoints_ApplyCooldownFromPlayerSpawn", function( ply )
     local cooldown = COOLDOWN_ON_PLY_SPAWN:GetFloat()
 
-    ply:SetNWFloat( "CFC_SpawnPoints_SpawnCooldownEndTime", CurTime() + cooldown )
+    CFC_SpawnPoints.SetSpawnCooldownEndTime( ply, CurTime() + cooldown )
 end )
 
 hook.Add( "CanTool", "CFC_Spawnpoint2_BannedTools", function( ply, tr, tool )
@@ -74,7 +77,7 @@ hook.Add( "CanTool", "CFC_Spawnpoint2_BannedTools", function( ply, tr, tool )
 end )
 
 hook.Add( "PlayerDisconnected", "UnlinkPlayerOnDisconnect", function( ply )
-    local spawnPoint = ply:GetNWEntity( "CFC_SpawnPoints_LinkedSpawnPoint" )
+    local spawnPoint = CFC_SpawnPoints.GetLinkedSpawnPoint( ply )
     if not IsValid( spawnPoint ) then return end
     if not spawnPoint.UnlinkPlayer then return end
 
@@ -82,8 +85,7 @@ hook.Add( "PlayerDisconnected", "UnlinkPlayerOnDisconnect", function( ply )
 end )
 
 hook.Add( "CFC_SpawnPoints_DenyCreation", "CFC_SpawnPoints_EnforcePlayerSpawnCooldown", function( ply, data )
-    local cooldownEndTime = ply:GetNWFloat( "CFC_SpawnPoints_SpawnCooldownEndTime", 0 )
-
+    local cooldownEndTime = CFC_SpawnPoints.GetSpawnCooldownEndTime( ply )
     local timeLeft = cooldownEndTime - CurTime()
 
     if timeLeft > 0 then
@@ -105,7 +107,7 @@ hook.Add( "CFC_SpawnPoints_DenyCreation", "CFC_SpawnPoints_EnforcePlayerSpawnCoo
 end )
 
 hook.Add( "CFC_SpawnPoints_DenyLink", "CFC_SpawnPoints_EnforcePlayerSpawnCooldown", function( _, ply )
-    local cooldownEndTime = ply:GetNWFloat( "CFC_SpawnPoints_SpawnCooldownEndTime", 0 )
+    local cooldownEndTime = CFC_SpawnPoints.GetSpawnCooldownEndTime( ply )
 
     if CurTime() < cooldownEndTime then
         if hook.Run( "CFC_SpawnPoints_IgnorePlayerSpawnCooldown", ply ) then return end
@@ -139,7 +141,7 @@ hook.Add( "PlayerSay", "UnlinkSpawnPointCommand", function( ply, txt )
     local unlinkSpawnCommands = commands.unlinkSpawnPoint
     if not unlinkSpawnCommands[text] then return end
 
-    local spawnPoint = ply:GetNWEntity( "CFC_SpawnPoints_LinkedSpawnPoint" )
+    local spawnPoint = CFC_SpawnPoints.GetLinkedSpawnPoint( ply )
     if not IsValid( spawnPoint ) then
         ply:PrintMessage( 4, "You are not linked to a Spawn Point" )
 

@@ -44,13 +44,56 @@ function CFC_SpawnPoints.IsFriendly( spawnPoint, ply )
     return false, "You are not buddied with the Spawn Point's owner."
 end
 
+function CFC_SpawnPoints.SetSpawnCooldownEndTime( ply, time )
+    ply._cfcSpawnPoints_SpawnCooldownEndTime = time
+
+    if CLIENT then return end
+
+    net.Start( "CFC_SpawnPoints_SetSpawnCooldownEndTime" )
+    net.WriteFloat( time )
+    net.Send( ply )
+end
+
+function CFC_SpawnPoints.GetSpawnCooldownEndTime( ply )
+    return ply._cfcSpawnPoints_SpawnCooldownEndTime or 0
+end
+
+function CFC_SpawnPoints.SetLastRemovedTime( ply, time )
+    ply._cfcSpawnPoints_LastRemovedTime = time
+
+    if CLIENT then return end
+
+    net.Start( "CFC_SpawnPoints_SetLastRemovedTime" )
+    net.WriteFloat( time )
+    net.Send( ply )
+end
+
+function CFC_SpawnPoints.GetLastRemovedTime( ply )
+    return ply._cfcSpawnPoints_LastRemovedTime or 0
+end
+
+function CFC_SpawnPoints.SetLinkedSpawnPoint( ply, spawnpoint )
+    spawnpoint = IsValid( spawnpoint ) and spawnpoint or nil
+    ply._cfcSpawnPoints_LinkedSpawnPoint = spawnpoint
+
+    if CLIENT then return end
+
+    net.Start( "CFC_SpawnPoints_SetLinkedSpawnPoint" )
+    net.WriteEntity( spawnpoint or game.GetWorld() )
+    net.Send( ply )
+end
+
+function CFC_SpawnPoints.GetLinkedSpawnPoint( ply )
+    return ply._cfcSpawnPoints_LinkedSpawnPoint
+end
+
 
 ----- PRIVATE FUNCTIONS -----
 
 local function ignoreCooldownsDueToRemovalWindow( ply )
     if REMOVAL_WINDOW:GetFloat() <= 0 then return false end
 
-    local lastRemoval = ply:GetNWFloat( "CFC_SpawnPoints_LastRemovedTime", 0 )
+    local lastRemoval = CFC_SpawnPoints.GetLastRemovedTime( ply )
     local hasBeenALongTime = CurTime() - lastRemoval > REMOVAL_WINDOW:GetFloat()
 
     return hasBeenALongTime
@@ -97,3 +140,18 @@ hook.Add( "InitPostEntity", "CFC_SpawnPoints_BlockInvisibility", function()
         setSubMaterial( self, index, material )
     end
 end )
+
+
+if CLIENT then
+    net.Receive( "CFC_SpawnPoints_SetSpawnCooldownEndTime", function()
+        CFC_SpawnPoints.SetSpawnCooldownEndTime( LocalPlayer(), net.ReadFloat() )
+    end )
+
+    net.Receive( "CFC_SpawnPoints_SetLastRemovedTime", function()
+        CFC_SpawnPoints.SetLastRemovedTime( LocalPlayer(), net.ReadFloat() )
+    end )
+
+    net.Receive( "CFC_SpawnPoints_SetLinkedSpawnPoint", function()
+        CFC_SpawnPoints.SetLinkedSpawnPoint( LocalPlayer(), net.ReadEntity() )
+    end )
+end

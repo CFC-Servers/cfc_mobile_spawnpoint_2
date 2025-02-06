@@ -142,7 +142,7 @@ function ENT:OnRemove()
     for ply in pairs( self._linkedPlayers ) do
         if IsValid( ply ) then
             atLeastOneLinked = true
-            ply:SetNWFloat( "CFC_SpawnPoints_LastRemovedTime", now )
+            CFC_SpawnPoints.SetLastRemovedTime( ply, now )
             break
         end
     end
@@ -159,7 +159,7 @@ function ENT:OnRemove()
     local owner = CPPI and self:CPPIGetOwner() or self:GetCreatingPlayer()
 
     if IsValid( owner ) then
-        owner:SetNWFloat( "CFC_SpawnPoints_LastRemovedTime", now )
+        CFC_SpawnPoints.SetLastRemovedTime( owner, now )
     end
 end
 
@@ -176,7 +176,7 @@ function ENT:Use( ply )
         endTimes[ply] = now + interactCooldown
     end
 
-    local isLinked = ply:GetNWEntity( "CFC_SpawnPoints_LinkedSpawnPoint" ) == self
+    local isLinked = CFC_SpawnPoints.GetLinkedSpawnPoint( ply ) == self
 
     if isLinked then
         -- Unlink
@@ -208,7 +208,7 @@ end
 
 function ENT:LinkPlayer( ply )
     if not IsValid( ply ) then return end
-    local oldSpawnPoint = ply:GetNWEntity( "CFC_SpawnPoints_LinkedSpawnPoint" )
+    local oldSpawnPoint = CFC_SpawnPoints.GetLinkedSpawnPoint( ply )
     if oldSpawnPoint == self then return end
 
     local denyReason = hook.Run( "CFC_SpawnPoints_DenyLink", self, ply )
@@ -223,7 +223,7 @@ function ENT:LinkPlayer( ply )
         oldSpawnPoint:UnlinkPlayer( ply )
     end
 
-    ply:SetNWEntity( "CFC_SpawnPoints_LinkedSpawnPoint", self )
+    CFC_SpawnPoints.SetLinkedSpawnPoint( ply, self )
     self._linkedPlayers[ply] = "Linked"
 
     return true
@@ -231,9 +231,9 @@ end
 
 function ENT:UnlinkPlayer( ply )
     if not IsValid( ply ) then return end
-    if ply:GetNWEntity( "CFC_SpawnPoints_LinkedSpawnPoint" ) ~= self then return end
+    if CFC_SpawnPoints.GetLinkedSpawnPoint( ply ) ~= self then return end
 
-    ply:SetNWEntity( "CFC_SpawnPoints_LinkedSpawnPoint", NULL )
+    CFC_SpawnPoints.SetLinkedSpawnPoint( ply, NULL )
     self._linkedPlayers[ply] = nil
 end
 

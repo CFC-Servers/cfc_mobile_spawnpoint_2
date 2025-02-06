@@ -48,7 +48,7 @@ local function shouldShowPointSpawnCooldown( spawnPoint, ply, now )
 end
 
 local function shouldShowPlayerSpawnCooldown( _spawnPoint, ply, now )
-    if now >= ply:GetNWFloat( "CFC_SpawnPoints_SpawnCooldownEndTime", 0 ) then return false end
+    if now >= CFC_SpawnPoints.GetSpawnCooldownEndTime( ply ) then return false end
     if hook.Run( "CFC_SpawnPoints_IgnorePlayerSpawnCooldown", ply ) then return false end
 
     return true
@@ -118,7 +118,7 @@ function ENT:TryDrawMessage()
 
     -- Link message
     if not isFriendly then return end
-    if ply:GetNWEntity( "CFC_SpawnPoints_LinkedSpawnPoint" ) == self then return end
+    if CFC_SpawnPoints.GetLinkedSpawnPoint( ply ) == self then return end
 
     local now = CurTime()
 
