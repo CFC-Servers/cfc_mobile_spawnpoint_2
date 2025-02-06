@@ -2,11 +2,11 @@ AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 include( "shared.lua" )
 
-local COOLDOWN_ON_POINT_SPAWN
-local INTERACT_COOLDOWN
-local HEALTH_MAX
-local HEALTH_REGEN
-local HEALTH_REGEN_COOLDOWN
+local COOLDOWN_ON_POINT_SPAWN = CreateConVar( "cfc_spawnpoints_cooldown_on_point_spawn", 5, { FCVAR_ARCHIVE }, "When a spawn point is created, it cannot be linked to for this many seconds.", 0, 1000 )
+local INTERACT_COOLDOWN = CreateConVar( "cfc_spawnpoints_interact_cooldown", 0.5, { FCVAR_ARCHIVE }, "Per-player interaction cooldown for spawn points.", 0, 1000 )
+local HEALTH_MAX = CreateConVar( "cfc_spawnpoints_health_max", 1500, { FCVAR_ARCHIVE }, "Max health of spawnpoints. 0 to disable.", 0, 10000 )
+local HEALTH_REGEN = CreateConVar( "cfc_spawnpoints_health_regen", 200, { FCVAR_ARCHIVE }, "Health regenerated per second by spawnpoints. 0 to disable.", 0, 10000 )
+local HEALTH_REGEN_COOLDOWN = CreateConVar( "cfc_spawnpoints_health_regen_cooldown", 10, { FCVAR_ARCHIVE }, "If a spawnpoint takes damage, it must wait this long before it can start regenerating. 0 to disable.", 0, 10000 )
 
 local EFF_SPAWN_COLOR_ANG = Angle( 150, 150, 255 )
 local EFF_COOLDOWN_FINISHED_COLOR_ANG = Angle( 150, 255, 150 )
@@ -322,17 +322,5 @@ function ENT:PhysicsCollide() end
 
 ----- SETUP -----
 
-local function localizeConvars()
-    COOLDOWN_ON_POINT_SPAWN = GetConVar( "cfc_spawnpoints_cooldown_on_point_spawn" )
-    INTERACT_COOLDOWN = GetConVar( "cfc_spawnpoints_interact_cooldown" )
-    HEALTH_MAX = GetConVar( "cfc_spawnpoints_health_max" )
-    HEALTH_REGEN = GetConVar( "cfc_spawnpoints_health_regen" )
-    HEALTH_REGEN_COOLDOWN = GetConVar( "cfc_spawnpoints_health_regen_cooldown" )
-end
-
-
 -- Needed to prevent dupes from bypassing the spawn limit
 duplicator.RegisterEntityClass( "sent_spawnpoint", makeSpawnPoint, "Data" )
-
-hook.Add( "InitPostEntity", "CFC_SpawnPoints_SentSpawnPoint_Setup", localizeConvars )
-if Entity( 0 ) ~= NULL then localizeConvars() end -- Work with auto-refresh

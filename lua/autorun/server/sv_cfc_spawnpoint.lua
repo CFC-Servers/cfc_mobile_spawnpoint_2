@@ -22,7 +22,7 @@ CFC_SpawnPoints.BANNED_TOOLS = {
     ["colour"] = true,
 }
 
-local COOLDOWN_ON_PLY_SPAWN
+local COOLDOWN_ON_PLY_SPAWN = CreateConVar( "cfc_spawnpoints_cooldown_on_ply_spawn", 10, { FCVAR_ARCHIVE }, "When a player spawns, they must wait this many seconds before they can create/link spawn points.", 0, 1000 )
 
 local commands = CFC_SpawnPoints.COMMANDS
 local bannedTools = CFC_SpawnPoints.BANNED_TOOLS
@@ -38,14 +38,6 @@ util.AddNetworkString( "CFC_SpawnPoints_SetLinkedSpawnPoint" )
 
 
 ----- SETUP -----
-
-local function localizeConvars()
-    COOLDOWN_ON_PLY_SPAWN = GetConVar( "cfc_spawnpoints_cooldown_on_ply_spawn" )
-end
-
-
-hook.Add( "InitPostEntity", "CFC_SpawnPoints_Setup", localizeConvars )
-if Entity( 0 ) ~= NULL then localizeConvars() end -- Work with auto-refresh
 
 hook.Add( "PlayerSpawn", "SpawnPointHook", function( ply )
     local spawnPoint = CFC_SpawnPoints.GetLinkedSpawnPoint( ply )
