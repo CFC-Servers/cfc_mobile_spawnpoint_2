@@ -80,43 +80,37 @@ end )
 hook.Add( "CFC_SpawnPoints_DenyCreation", "CFC_SpawnPoints_EnforcePlayerSpawnCooldown", function( ply, data )
     local cooldownEndTime = CFC_SpawnPoints.GetSpawnCooldownEndTime( ply )
     local timeLeft = cooldownEndTime - CurTime()
+    if timeLeft <= 0 then return end
+    if hook.Run( "CFC_SpawnPoints_IgnorePlayerSpawnCooldown", ply ) then return end
 
-    if timeLeft > 0 then
-        if hook.Run( "CFC_SpawnPoints_IgnorePlayerSpawnCooldown", ply ) then return end
+    -- If this cooldown stops a creation attempt, notify the player when it's over.
+    timer.Create( "CFC_SpawnPoints_NotifyPlayerSpawnCooldownOver_" .. ply:SteamID(), timeLeft + 0.1, 1, function()
+        if not IsValid( ply ) then return end
 
-        -- If this cooldown stops a creation attempt, notify the player when it's over.
-        timer.Create( "CFC_SpawnPoints_NotifyPlayerSpawnCooldownOver_" .. ply:SteamID(), timeLeft + 0.1, 1, function()
-            if not IsValid( ply ) then return end
+        -- Don't notify if something else is still blocking spawnpoint creation.
+        if not hook.Run( "CFC_SpawnPoints_DenyCreation", ply, data ) then
+            net.Start( "CFC_SpawnPoints_CreationCooldownOver" )
+            net.Send( ply )
+        end
+    end )
 
-            -- Don't notify if something else is still blocking spawnpoint creation.
-            if not hook.Run( "CFC_SpawnPoints_DenyCreation", ply, data ) then
-                net.Start( "CFC_SpawnPoints_CreationCooldownOver" )
-                net.Send( ply )
-            end
-        end )
-
-        return "You must wait " .. math.ceil( timeLeft ) .. " second(s) before creating a new Spawn Point"
-    end
+    return "You must wait " .. math.ceil( timeLeft ) .. " second(s) before creating a new Spawn Point"
 end )
 
 hook.Add( "CFC_SpawnPoints_DenyLink", "CFC_SpawnPoints_EnforcePlayerSpawnCooldown", function( _, ply )
     local cooldownEndTime = CFC_SpawnPoints.GetSpawnCooldownEndTime( ply )
+    if CurTime() >= cooldownEndTime then return end
+    if hook.Run( "CFC_SpawnPoints_IgnorePlayerSpawnCooldown", ply ) then return end
 
-    if CurTime() < cooldownEndTime then
-        if hook.Run( "CFC_SpawnPoints_IgnorePlayerSpawnCooldown", ply ) then return end
-
-        return "You must wait after spawning to make any links."
-    end
+    return "You must wait after spawning to make any links."
 end )
 
 hook.Add( "CFC_SpawnPoints_DenyLink", "CFC_SpawnPoints_EnforcePointSpawnCooldown", function( spawnPoint, ply )
     local cooldownEndTime = spawnPoint:GetCreationCooldownEndTime()
+    if CurTime() >= cooldownEndTime then return end
+    if hook.Run( "CFC_SpawnPoints_IgnorePointSpawnCooldown", spawnPoint, ply ) then return end
 
-    if CurTime() < cooldownEndTime then
-        if hook.Run( "CFC_SpawnPoints_IgnorePointSpawnCooldown", spawnPoint, ply ) then return end
-
-        return "The spawn point is not ready to be linked to yet."
-    end
+    return "The spawn point is not ready to be linked to yet."
 end )
 
 -- Denies linking based on CFC_SpawnPoints.IsFriendly()
