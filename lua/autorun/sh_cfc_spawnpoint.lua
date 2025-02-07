@@ -11,12 +11,14 @@ local REMOVAL_WINDOW = CreateConVar( "cfc_spawnpoints_removal_window", 30, { FCV
 
 ----- GLOBAL FUNCTIONS -----
 
---[[
-    - Determines whether or not a player is considered 'friendly' to a spawn point.
-        - i.e. they can link to it, if no cooldowns or other restrictions block them.
-    - Returns friendly, failReason
-    - You can override this function in InitPostEntity if you need a different 'friendliness' check.
---]]
+--- Determines whether or not a player is considered 'friendly' to a spawn point.
+--- i.e. they can link to it, if no cooldowns or other restrictions block them.
+--- You can override this function in InitPostEntity if you need a different 'friendliness' check.
+--- Must be well-defined in both server and client realms.
+---@param Entity spawnPoint The spawn point entity.
+---@param Player ply The player.
+---@return boolean friendly True if the player is friendly to the spawn point.
+---@return string? failReason The reason the player is not friendly to the spawn point, if any.
 function CFC_SpawnPoints.IsFriendly( spawnPoint, ply )
     if not CPPI then
         if spawnPoint:GetCreatingPlayer() == ply then return true end
