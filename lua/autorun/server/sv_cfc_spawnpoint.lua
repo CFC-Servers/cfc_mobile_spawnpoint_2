@@ -39,14 +39,6 @@ util.AddNetworkString( "CFC_SpawnPoints_SetLinkedSpawnPoint" )
 
 ----- GLOBAL FUNCTIONS -----
 
---[[
-    - Determines if a given spawnpoint creation attempt should be blocked.
-    - Will return nil if it is allowed, or true or a denial reason string if it is not.
-
-    ply: ()
---]]
-
-
 --- Determines if a given spawnpoint creation attempt should be blocked.
 ---@param Player ply Player attempting to create a spawnpoint.
 ---@param table data Spawn info for the spawnpoint. At minimum, contains Pos and Angle.
