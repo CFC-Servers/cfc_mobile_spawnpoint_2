@@ -37,6 +37,36 @@ util.AddNetworkString( "CFC_SpawnPoints_SetLastRemovedTime" )
 util.AddNetworkString( "CFC_SpawnPoints_SetLinkedSpawnPoint" )
 
 
+----- GLOBAL FUNCTIONS -----
+
+--[[
+    - Determines if a given spawnpoint creation attempt should be blocked.
+    - Will return nil if it is allowed, or true or a denial reason string if it is not.
+
+    ply: ()
+--]]
+
+
+--- Determines if a given spawnpoint creation attempt should be blocked.
+---@param Player ply Player attempting to create a spawnpoint.
+---@param table data Spawn info for the spawnpoint. At minimum, contains Pos and Angle.
+---@return string|boolean|nil denyReason True or a denial reason if blocked, or nil if allowed.
+---@return string? denyReasonID Optional string for identifying denial reasons. Spawn cooldown gives "CFC_SpawnPoints_SpawnCooldown"
+function CFC_SpawnPoints.IsCreationBlocked( ply, data )
+    -- Let other addons add blockers.
+    local denyReason, denyReasonID = hook.Run( "CFC_SpawnPoints_DenyCreation", ply, data )
+    if denyReason then return denyReason, denyReasonID end
+
+    -- Enforce spawn cooldown.
+    local cooldownEndTime = CFC_SpawnPoints.GetSpawnCooldownEndTime( ply )
+    local timeLeft = cooldownEndTime - CurTime()
+    if timeLeft <= 0 then return end
+    if hook.Run( "CFC_SpawnPoints_IgnorePlayerSpawnCooldown", ply ) then return end
+
+    return "You must wait " .. math.ceil( timeLeft ) .. " second(s) before creating a new Spawn Point", "CFC_SpawnPoints_SpawnCooldown"
+end
+
+
 ----- SETUP -----
 
 hook.Add( "PlayerSpawn", "SpawnPointHook", function( ply )
@@ -75,26 +105,6 @@ hook.Add( "PlayerDisconnected", "UnlinkPlayerOnDisconnect", function( ply )
     if not spawnPoint.UnlinkPlayer then return end
 
     spawnPoint:UnlinkPlayer( ply )
-end )
-
-hook.Add( "CFC_SpawnPoints_DenyCreation", "CFC_SpawnPoints_EnforcePlayerSpawnCooldown", function( ply, data )
-    local cooldownEndTime = CFC_SpawnPoints.GetSpawnCooldownEndTime( ply )
-    local timeLeft = cooldownEndTime - CurTime()
-    if timeLeft <= 0 then return end
-    if hook.Run( "CFC_SpawnPoints_IgnorePlayerSpawnCooldown", ply ) then return end
-
-    -- If this cooldown stops a creation attempt, notify the player when it's over.
-    timer.Create( "CFC_SpawnPoints_NotifyPlayerSpawnCooldownOver_" .. ply:SteamID(), timeLeft + 0.1, 1, function()
-        if not IsValid( ply ) then return end
-
-        -- Don't notify if something else is still blocking spawnpoint creation.
-        if not hook.Run( "CFC_SpawnPoints_DenyCreation", ply, data ) then
-            net.Start( "CFC_SpawnPoints_CreationCooldownOver" )
-            net.Send( ply )
-        end
-    end )
-
-    return "You must wait " .. math.ceil( timeLeft ) .. " second(s) before creating a new Spawn Point"
 end )
 
 hook.Add( "CFC_SpawnPoints_DenyLink", "CFC_SpawnPoints_EnforcePlayerSpawnCooldown", function( _, ply )

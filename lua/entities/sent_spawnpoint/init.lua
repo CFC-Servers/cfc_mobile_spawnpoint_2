@@ -26,11 +26,27 @@ local function doPointEffect( spawnPoint, colorAng )
     util.Effect( "spawnpoint_start", eff, true, true )
 end
 
+-- If the spawn cooldown stops a creation attempt, notify the player when it's over.
+local function notifyWhenSpawnCooldownEnds( ply, data )
+    local cooldownEndTime = CFC_SpawnPoints.GetSpawnCooldownEndTime( ply )
+    local timeLeft = cooldownEndTime - CurTime()
+
+    timer.Create( "CFC_SpawnPoints_NotifyPlayerSpawnCooldownOver_" .. ply:SteamID(), timeLeft + 0.1, 1, function()
+        if not IsValid( ply ) then return end
+
+        -- Don't notify if something is still blocking spawnpoint creation.
+        if not CFC_SpawnPoints.IsCreationBlocked( ply, data ) then
+            net.Start( "CFC_SpawnPoints_CreationCooldownOver" )
+            net.Send( ply )
+        end
+    end )
+end
+
 local function makeSpawnPoint( ply, data )
     local validPly = IsValid( ply )
     if validPly and not ply:CheckLimit( "sent_spawnpoint" ) then return end
 
-    local denyReason = hook.Run( "CFC_SpawnPoints_DenyCreation", ply, data )
+    local denyReason, denyReasonID = CFC_SpawnPoints.IsCreationBlocked( ply, data )
 
     if denyReason then
         denyReason = type( denyReason ) == "string" and denyReason
@@ -38,6 +54,10 @@ local function makeSpawnPoint( ply, data )
         net.Start( "CFC_SpawnPoints_CreationDenied" )
         net.WriteString( denyReason or "Failed to create Spawn Point" )
         net.Send( ply )
+
+        if denyReasonID == "CFC_SpawnPoints_SpawnCooldown" then
+            notifyWhenSpawnCooldownEnds( ply, data )
+        end
 
         return
     end
