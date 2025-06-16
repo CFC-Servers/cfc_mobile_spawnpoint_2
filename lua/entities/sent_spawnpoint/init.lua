@@ -409,6 +409,10 @@ function ENT:ACF_PreDamage()
     return false -- Block ACF damage.
 end
 
+function ENT:ShouldDoDamageConversion()
+    return false -- Block Damage Conversion damage.
+end
+
 function ENT:PhysicsUpdate() end
 
 function ENT:PhysicsCollide() end
