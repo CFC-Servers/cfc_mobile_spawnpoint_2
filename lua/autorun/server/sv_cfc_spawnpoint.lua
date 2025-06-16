@@ -156,7 +156,7 @@ hook.Add( "PlayerSay", "UnlinkThisSpawnPointCommand", function( ply, txt )
         return
     end
 
-    local owner = spawnPoint:CPPIGetOwner()
+    local owner = CPPI and spawnPoint:CPPIGetOwner() or spawnPoint:GetCreatingPlayer()
 
     if owner ~= ply and not ply:IsAdmin() then
         ply:PrintMessage( 4, "That's not yours! You can't unlink others from this Spawn Point" )
