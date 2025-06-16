@@ -1,5 +1,10 @@
 include( "shared.lua" )
 
+local entMeta = FindMetaTable( "Entity" )
+local vecMeta = FindMetaTable( "Vector" )
+local LocalPlayer = LocalPlayer
+local EyePos = EyePos
+
 local MESSAGE_DRAW_DISTANCE = 500
 local MESSAGE_FADE_START_DISTANCE = 300 -- 0 to disable fading
 local MESSAGE_BOTTOM_HEIGHT = 20
@@ -64,18 +69,20 @@ function ENT:Initialize()
 end
 
 function ENT:Draw()
-    self:DrawModel()
-    self:TryDrawMessage()
+    local myTbl = entMeta.GetTable( self )
+    entMeta.DrawModel( self )
+    myTbl.TryDrawMessage( self, myTbl )
 end
 
-function ENT:TryDrawMessage()
+function ENT:TryDrawMessage( myTbl )
     local ply = LocalPlayer()
-    local eyeDist = EyePos():Distance( self:GetPos() )
+    local myPos = entMeta.GetPos( self )
+    local eyeDist = vecMeta.Distance( EyePos(), myPos )
 
     -- Draw distance check.
     if eyeDist > MESSAGE_DRAW_DISTANCE then
-        if self._inDrawDistance then -- Leaving draw distance
-            self._inDrawDistance = false
+        if myTbl._inDrawDistance then -- Leaving draw distance
+            myTbl._inDrawDistance = false
         end
 
         return
