@@ -121,7 +121,6 @@ function ENT:Initialize()
     self:SetSolid( SOLID_VPHYSICS )
     self:SetUseType( SIMPLE_USE )
     self._linkedPlayers = {}
-    self._interactCooldownEndTimes = {}
     self._regenStartTime = 0
     self._lastRegenTime = CurTime()
     self._playingRegenSound = false
@@ -197,12 +196,11 @@ function ENT:Use( ply )
 
     if interactCooldown > 0 then
         local now = CurTime()
-        local endTimes = self._interactCooldownEndTimes
-        local plyEndTime = endTimes[ply]
+        local nextPlyInteract = ply._nextMobileSpawnInteract or 0
 
-        if plyEndTime and plyEndTime > now then return end
+        if nextPlyInteract and nextPlyInteract > now then return end
 
-        endTimes[ply] = now + interactCooldown
+        ply._nextMobileSpawnInteract = now + interactCooldown
     end
 
     local isLinked = CFC_SpawnPoints.GetLinkedSpawnPoint( ply ) == self
