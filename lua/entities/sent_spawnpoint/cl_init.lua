@@ -101,7 +101,9 @@ function ENT:TryDrawMessage( myTbl )
     local alpha = 255
 
     if MESSAGE_FADE_START_DISTANCE ~= 0 and eyeDist > MESSAGE_FADE_START_DISTANCE then
-        local farFrac = ( eyeDist - MESSAGE_FADE_START_DISTANCE ) / ( MESSAGE_DRAW_DISTANCE - MESSAGE_FADE_START_DISTANCE )
+        local distFromStart = ( eyeDist - MESSAGE_FADE_START_DISTANCE )
+        local fadeRange = MESSAGE_DRAW_DISTANCE - MESSAGE_FADE_START_DISTANCE
+        local farFrac = distFromStart / fadeRange
 
         alpha = ( 1 - farFrac ) * 255
     end
