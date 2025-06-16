@@ -27,7 +27,7 @@ local COOLDOWN_ON_PLY_SPAWN = CreateConVar( "cfc_spawnpoints_cooldown_on_ply_spa
 local commands = CFC_SpawnPoints.COMMANDS
 local bannedTools = CFC_SpawnPoints.BANNED_TOOLS
 
-local heightOfSpawnPointPlusOne = 16
+local spawnOffsetHeight = 16
 
 util.AddNetworkString( "CFC_SpawnPoints_CreationDenied" )
 util.AddNetworkString( "CFC_SpawnPoints_LinkDenySound" )
@@ -70,7 +70,7 @@ hook.Add( "PlayerSpawn", "SpawnPointHook", function( ply )
         return
     end
 
-    local spawnPos = spawnPoint:GetPos() + Vector( 0, 0, heightOfSpawnPointPlusOne )
+    local spawnPos = spawnPoint:GetPos() + Vector( 0, 0, spawnOffsetHeight )
     ply:SetPos( spawnPos )
     spawnPoint:OnSpawnedPlayer( ply )
 end )
