@@ -2,6 +2,11 @@ AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 include( "shared.lua" )
 
+local entMeta = FindMetaTable( "Entity" )
+local cvarMeta = FindMetaTable( "ConVar" )
+
+local CurTime = CurTime
+
 local COOLDOWN_ON_POINT_SPAWN = CreateConVar( "cfc_spawnpoints_cooldown_on_point_spawn", 5, { FCVAR_ARCHIVE }, "When a spawn point is created, it cannot be linked to for this many seconds.", 0, 1000 )
 local INTERACT_COOLDOWN = CreateConVar( "cfc_spawnpoints_interact_cooldown", 0.5, { FCVAR_ARCHIVE }, "Per-player interaction cooldown for spawn points.", 0, 1000 )
 local HEALTH_MAX = CreateConVar( "cfc_spawnpoints_health_max", 1500, { FCVAR_ARCHIVE }, "Max health of spawnpoints. 0 to disable.", 0, 10000 )
@@ -15,6 +20,11 @@ local EFF_LINK_COLOR_ANG = Angle( 50, 255, 50 )
 local EFF_UNLINK_COLOR_ANG = Angle( 70, 0, 140 )
 
 local REGEN_SOUND = "ambient/levels/canals/manhack_machine_loop1.wav"
+
+local LEGAL_CHECK_INTERVAL = 5
+local LEGAL_COLGROUP = COLLISION_GROUP_NONE
+local LEGAL_MATERIAL = ""
+local LEGAL_COLOR = Color( 255, 255, 255, 255 )
 
 
 ----- PRIVATE FUNCTIONS -----
@@ -77,10 +87,6 @@ local function makeSpawnPoint( ply, data )
         ent:SetCreatingPlayer( ply )
     end
 
-    -- Ensure dupes can't smuggle in invisibility.
-    ent:SetColor( Color( 255, 255, 255, 255 ) )
-    ent:SetMaterial( "" )
-
     return ent
 end
 
@@ -119,6 +125,7 @@ function ENT:Initialize()
     self._regenStartTime = 0
     self._lastRegenTime = CurTime()
     self._playingRegenSound = false
+    self._nextLegalCheck = 0
 
     local maxHealth = HEALTH_MAX:GetInt()
 
@@ -151,6 +158,8 @@ function ENT:Initialize()
             self:EmitSound( "npc/roller/remote_yes.wav", 85, 110 )
         end )
     end
+
+    self:EnforceLegality() -- enforce once on spawn
 end
 
 function ENT:OnRemove()
@@ -275,38 +284,64 @@ function ENT:UnlinkAllPlayersExcept( excludedPlayersLookup )
     end
 end
 
-function ENT:Think()
-    local maxHealth = self:GetMaxHealth()
+function ENT:DoHealthRegen( myTbl )
+    local maxHealth = entMeta.GetMaxHealth( self )
     if maxHealth <= 0 then return end
 
-    local regen = HEALTH_REGEN:GetFloat()
+    local regen = cvarMeta.GetFloat( HEALTH_REGEN )
     if regen <= 0 then return end
 
     local now = CurTime()
-    if now <= self._regenStartTime then return end
+    if now <= myTbl._regenStartTime then return end
 
-    local health = self:Health()
+    local health = entMeta.Health( self )
     if health >= maxHealth then return end
 
-    local timeSince = now - self._lastRegenTime
+    local timeSince = now - myTbl._lastRegenTime
 
     health = math.min( health + regen * timeSince, maxHealth )
 
-    self:SetHealth( health )
-    self._lastRegenTime = now
+    entMeta.SetHealth( self, health )
+    myTbl._lastRegenTime = now
 
     if health >= maxHealth then
-        if self._playingRegenSound then
-            self._playingRegenSound = false
-            self:StopSound( REGEN_SOUND )
-            self:EmitSound( "ambient/levels/prison/radio_random12.wav", 80, 100 )
+        if myTbl._playingRegenSound then
+            myTbl._playingRegenSound = false
+            entMeta.StopSound( self, REGEN_SOUND )
+            entMeta.EmitSound( self, "ambient/levels/prison/radio_random12.wav", 80, 100 )
         end
     else
-        if not self._playingRegenSound then
-            self._playingRegenSound = true
-            self:EmitSound( REGEN_SOUND, 80, 105 )
+        if not myTbl._playingRegenSound then
+            myTbl._playingRegenSound = true
+            entMeta.EmitSound( self, REGEN_SOUND, 80, 105 )
         end
     end
+end
+
+function ENT:EnforceLegality( myTbl )
+    myTbl = myTbl or entMeta.GetTable( self )
+
+    if myTbl._nextLegalCheck < CurTime() then return end
+    myTbl._nextLegalCheck = CurTime() + LEGAL_CHECK_INTERVAL
+
+    if entMeta.GetColor( self ) ~= LEGAL_COLOR then
+        entMeta.SetColor( self, LEGAL_COLOR )
+    end
+    if entMeta.GetMaterial( self ) ~= LEGAL_MATERIAL then
+        entMeta.SetMaterial( self, LEGAL_MATERIAL )
+    end
+    if not entMeta.IsSolid( self ) then
+        entMeta.SetSolid( self, SOLID_VPHYSICS )
+    end
+    if entMeta.GetCollisionGroup( self ) ~= LEGAL_COLGROUP then
+        entMeta.SetCollisionGroup( self, LEGAL_COLGROUP )
+    end
+end
+
+function ENT:Think()
+    local myTbl = entMeta.GetTable( self )
+    myTbl.DoHealthRegen( self, myTbl )
+    myTbl.EnforceLegality( self, myTbl )
 end
 
 function ENT:OnTakeDamage( dmg )
