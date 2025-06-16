@@ -29,6 +29,11 @@ function CFC_SpawnPoints.IsFriendly( spawnPoint, ply )
     local owner = spawnPoint:CPPIGetOwner()
     if ply == owner then return true end
 
+    local friendlyOverride, reason = hook.Run( "CFC_SpawnPoints_IsFriendly", spawnPoint, owner, ply ) -- true for friendly, false for not
+    if friendlyOverride ~= nil then
+        return friendlyOverride, reason
+    end
+
     local friends = owner.CPPIGetFriends and owner:CPPIGetFriends()
 
     if not friends or friends == CPPI.CPPI_DEFER or friends == CPPI.CPPI_NOTIMPLEMENTED then
