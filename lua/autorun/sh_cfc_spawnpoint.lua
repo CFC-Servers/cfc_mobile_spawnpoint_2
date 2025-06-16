@@ -20,16 +20,16 @@ local REMOVAL_WINDOW = CreateConVar( "cfc_spawnpoints_removal_window", 30, { FCV
 ---@return boolean friendly True if the player is friendly to the spawn point.
 ---@return string? failReason The reason the player is not friendly to the spawn point, if any.
 function CFC_SpawnPoints.IsFriendly( spawnPoint, ply )
-    if CPPI and ply == spawnPoint:CPPIGetOwner() then return true end
-
+    local owner = CPPI and spawnPoint:CPPIGetOwner() or spawnPoint:GetCreatingPlayer()
     local friendlyOverride, reason = hook.Run( "CFC_SpawnPoints_IsFriendly", spawnPoint, owner, ply ) -- true for friendly, false for not
+
     if friendlyOverride ~= nil then
         return friendlyOverride, reason
     end
 
-    if not CPPI then
-        if spawnPoint:GetCreatingPlayer() == ply then return true end
+    if ply == owner then return true end
 
+    if not CPPI then
         return false, "You can only link to your own Spawn Points."
     end
 
