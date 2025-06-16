@@ -20,8 +20,8 @@ local MESSAGE_COLOR_POINT_SPAWN_COOLDOWN = Color( 255, 0, 0 )
 local MESSAGE_TEXT_PLAYER_SPAWN_COOLDOWN = "CANNOT LINK\nCHARGING"
 local MESSAGE_COLOR_PLAYER_SPAWN_COOLDOWN = Color( 255, 0, 0 )
 
-local MESSAGE_TEXT_LINK = "PRESS E"
-local MESSAGE_COLOR_LINK = Color( 250, 255, 0 )
+local MESSAGE_TEXT_LINKHINT = "PRESS %s"
+local MESSAGE_COLOR_LINKHINT = Color( 250, 255, 0 )
 
 local MESSAGE_ZOFFSET_HEALTH = -1 * MESSAGE_FONT_SIZE
 local MESSAGE_COLOR_HEALTH = Color( 255, 255, 255 )
@@ -134,7 +134,10 @@ function ENT:TryDrawMessage( myTbl )
     elseif shouldShowPlayerSpawnCooldown( self, ply, now ) then
         self:DrawMessage( MESSAGE_TEXT_PLAYER_SPAWN_COOLDOWN, MESSAGE_COLOR_PLAYER_SPAWN_COOLDOWN, alpha )
     else
-        self:DrawMessage( MESSAGE_TEXT_LINK, MESSAGE_COLOR_LINK, alpha )
+        local useKey = input.LookupBinding( "+use" )
+        if useKey then -- how are you playing without +use bound?
+            self:DrawMessage( string.format( MESSAGE_TEXT_LINKHINT, string.upper( useKey ) ), MESSAGE_COLOR_LINKHINT, alpha )
+        end
     end
 end
 
