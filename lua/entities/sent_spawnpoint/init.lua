@@ -22,9 +22,15 @@ local EFF_UNLINK_COLOR_ANG = Angle( 70, 0, 140 )
 local REGEN_SOUND = "ambient/levels/canals/manhack_machine_loop1.wav"
 
 local LEGAL_CHECK_INTERVAL = 5
-local LEGAL_COLGROUP = COLLISION_GROUP_NONE
 local LEGAL_MATERIAL = ""
-local LEGAL_COLOR = Color( 255, 255, 255, 255 )
+local LEGAL_ALPHA = 255
+local LEGAL_COLGROUP_MAIN = COLLISION_GROUP_NONE
+local LEGAL_COLGROUPS = {
+    [COLLISION_GROUP_NONE] = true,
+    [COLLISION_GROUP_WORLD] = true,
+    [COLLISION_GROUP_PASSABLE_DOOR] = true,
+    [COLLISION_GROUP_INTERACTIVE_DEBRIS] = true,
+}
 
 
 ----- PRIVATE FUNCTIONS -----
@@ -350,7 +356,10 @@ function ENT:EnforceLegality( myTbl )
     if myTbl._nextLegalCheck < CurTime() then return end
     myTbl._nextLegalCheck = CurTime() + LEGAL_CHECK_INTERVAL
 
-    if entMeta.GetColor( self ) ~= LEGAL_COLOR then
+    local color = entMeta.GetColor( self )
+
+    if color.a ~= LEGAL_ALPHA then
+        color.a = LEGAL_ALPHA
         entMeta.SetColor( self, LEGAL_COLOR )
     end
     if entMeta.GetMaterial( self ) ~= LEGAL_MATERIAL then
@@ -359,8 +368,8 @@ function ENT:EnforceLegality( myTbl )
     if not entMeta.IsSolid( self ) then
         entMeta.SetSolid( self, SOLID_VPHYSICS )
     end
-    if entMeta.GetCollisionGroup( self ) ~= LEGAL_COLGROUP then
-        entMeta.SetCollisionGroup( self, LEGAL_COLGROUP )
+    if not LEGAL_COLGROUPS[entMeta.GetCollisionGroup( self )] then
+        entMeta.SetCollisionGroup( self, LEGAL_COLGROUP_MAIN )
     end
 end
 
