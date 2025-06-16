@@ -96,7 +96,7 @@ function ENT:TryDrawMessage( myTbl )
     end
 
     -- Health message
-    local maxHealth = self:GetMaxHealth()
+    local maxHealth = self:GetPointMaxHealth()
     local isFriendly = self._isFriendlyCache
     local alpha = 255
 
@@ -107,7 +107,7 @@ function ENT:TryDrawMessage( myTbl )
     end
 
     if maxHealth > 0 then
-        local health = self:Health()
+        local health = self:GetPointHealth()
         local healthFrac = health / maxHealth
 
         if healthFrac < 1 then

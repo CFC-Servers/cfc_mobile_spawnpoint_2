@@ -143,12 +143,10 @@ function ENT:Initialize()
     self._playingRegenSound = false
     self._nextLegalCheck = 0
 
-    local maxHealth = HEALTH_MAX:GetInt()
+    local maxHealth = math.max( HEALTH_MAX:GetInt(), 0 )
 
-    if maxHealth > 0 then
-        self:SetMaxHealth( maxHealth )
-        self:SetHealth( maxHealth )
-    end
+    self:SetPointMaxHealth( maxHealth )
+    self:SetPointHealth( maxHealth )
 
     local phys = self:GetPhysicsObject()
     if phys:IsValid() then
@@ -317,7 +315,7 @@ function ENT:OnSpawnedPlayer()
 end
 
 function ENT:DoHealthRegen( myTbl )
-    local maxHealth = entMeta.GetMaxHealth( self )
+    local maxHealth = self:GetPointMaxHealth()
     if maxHealth <= 0 then return end
 
     local regen = cvarMeta.GetFloat( HEALTH_REGEN )
@@ -326,14 +324,14 @@ function ENT:DoHealthRegen( myTbl )
     local now = CurTime()
     if now <= myTbl._regenStartTime then return end
 
-    local health = entMeta.Health( self )
+    local health = self:GetPointHealth()
     if health >= maxHealth then return end
 
     local timeSince = now - myTbl._lastRegenTime
 
     health = math.min( health + regen * timeSince, maxHealth )
 
-    entMeta.SetHealth( self, health )
+    self:SetPointHealth( health )
     myTbl._lastRegenTime = now
 
     if health >= maxHealth then
@@ -383,10 +381,10 @@ function ENT:Think()
 end
 
 function ENT:OnTakeDamage( dmg )
-    if self:GetMaxHealth() <= 0 then return end
+    if self:GetPointMaxHealth() <= 0 then return end
     if self._dyingSpawnpoint then return end
 
-    local health = self:Health()
+    local health = self:GetPointHealth()
     local newHealth = health - dmg:GetDamage()
 
     if self._playingRegenSound then
@@ -401,7 +399,7 @@ function ENT:OnTakeDamage( dmg )
     else
         local regenStartTime = CurTime() + HEALTH_REGEN_COOLDOWN:GetFloat()
 
-        self:SetHealth( newHealth )
+        self:SetPointHealth( newHealth )
         self._regenStartTime = regenStartTime
         self._lastRegenTime = regenStartTime
     end
