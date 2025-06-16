@@ -362,12 +362,15 @@ function ENT:EnforceLegality( myTbl )
         color.a = LEGAL_ALPHA
         entMeta.SetColor( self, LEGAL_COLOR )
     end
+
     if entMeta.GetMaterial( self ) ~= LEGAL_MATERIAL then
         entMeta.SetMaterial( self, LEGAL_MATERIAL )
     end
+
     if not entMeta.IsSolid( self ) then
         entMeta.SetSolid( self, SOLID_VPHYSICS )
     end
+
     if not LEGAL_COLGROUPS[entMeta.GetCollisionGroup( self )] then
         entMeta.SetCollisionGroup( self, LEGAL_COLGROUP_MAIN )
     end
