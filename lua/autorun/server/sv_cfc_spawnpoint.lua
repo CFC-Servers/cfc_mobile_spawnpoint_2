@@ -72,6 +72,7 @@ hook.Add( "PlayerSpawn", "SpawnPointHook", function( ply )
 
     local spawnPos = spawnPoint:GetPos() + Vector( 0, 0, heightOfSpawnPointPlusOne )
     ply:SetPos( spawnPos )
+    spawnPoint:OnSpawnedPlayer( ply )
 end )
 
 hook.Add( "PlayerSpawn", "CFC_SpawnPoints_ApplyCooldownFromPlayerSpawn", function( ply )

@@ -29,6 +29,17 @@ local LEGAL_COLOR = Color( 255, 255, 255, 255 )
 
 ----- PRIVATE FUNCTIONS -----
 
+
+local function miniSpark( pos, scale )
+    local effectdata = EffectData()
+    effectdata:SetOrigin( pos )
+    effectdata:SetNormal( VectorRand() )
+    effectdata:SetMagnitude( 3 * scale ) --amount and shoot hardness
+    effectdata:SetScale( 1 * scale ) --length of strands
+    effectdata:SetRadius( 3 * scale ) --thickness of strands
+    util.Effect( "Sparks", effectdata )
+end
+
 local function doPointEffect( spawnPoint, colorAng )
     local eff = EffectData()
     eff:SetOrigin( spawnPoint:GetPos() )
@@ -282,6 +293,23 @@ function ENT:UnlinkAllPlayersExcept( excludedPlayersLookup )
     end
 end
 
+function ENT:OnDied()
+    local boxC = self:WorldSpaceCenter()
+    for _ = 1, 6 do
+        miniSpark( boxC, math.Rand( 0.5, 1.5 ) )
+
+    end
+
+    util.BlastDamage( self, self, boxC, 120, 5 ) -- 5 damage explosion, practically just fluff
+
+    self:EmitSound( "ambient/fire/gascan_ignite1.wav", 80, math.random( 90, 100 ), 1, CHAN_STATIC )
+    self:EmitSound( "npc/scanner/cbot_energyexplosion1.wav", 80, math.random( 120, 130 ), 1, CHAN_STATIC )
+end
+
+function ENT:OnSpawnedPlayer()
+    self:EmitSound( "items/medshot4.wav", 72, math.random( 120, 130 ), 1, CHAN_ITEM )
+end
+
 function ENT:DoHealthRegen( myTbl )
     local maxHealth = entMeta.GetMaxHealth( self )
     if maxHealth <= 0 then return end
@@ -344,6 +372,7 @@ end
 
 function ENT:OnTakeDamage( dmg )
     if self:GetMaxHealth() <= 0 then return end
+    if self._dyingSpawnpoint then return end
 
     local health = self:Health()
     local newHealth = health - dmg:GetDamage()
@@ -354,6 +383,8 @@ function ENT:OnTakeDamage( dmg )
     end
 
     if newHealth <= 0 then
+        self._dyingSpawnpoint = true
+        self:OnDied()
         self:Remove()
     else
         local regenStartTime = CurTime() + HEALTH_REGEN_COOLDOWN:GetFloat()
