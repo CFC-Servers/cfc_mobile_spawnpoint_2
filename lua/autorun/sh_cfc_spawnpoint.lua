@@ -29,7 +29,7 @@ function CFC_SpawnPoints.IsFriendly( spawnPoint, ply )
 
     if ply == owner then return true end
 
-    if not CPPI then
+    if not CPPI or not IsValid( owner ) then
         return false, "You can only link to your own Spawn Points."
     end
 
