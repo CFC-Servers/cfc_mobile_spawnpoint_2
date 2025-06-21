@@ -70,6 +70,22 @@ function calcSpawnPos( spawnPoint, ply )
     -- Ignore pitifully small spawn radiuses, no need to trace.
     if radius <= 16 then return spawnPos end
 
+    local radialFilter
+    local friendlyFunc = CFC_SpawnPoints.IsFriendly
+
+    if CPPI then
+        radialFilter = function( ent )
+            if not ent.CPPIGetOwner then return true end
+
+            local owner = ent:CPPIGetOwner()
+            if not IsValid( owner ) then return true end
+
+            -- Ignore non-friendly-owned entities, so they can't cover the spawnpoint and force the player to always spawn stuck in the center.
+            -- Doesn't stop enemies from using a massive prop that covers the entire radius, but that should be rare and easy to moderate.
+            return friendlyFunc( spawnPoint, owner )
+        end
+    end
+
     -- Trace outwards from the spawnpoint.
     local radiusEff = math.Rand( radius * 0.125, radius )
     local traceDir = Angle( 0, math.Rand( 0, 360 ), 0 ):Forward()
@@ -80,7 +96,7 @@ function calcSpawnPos( spawnPoint, ply )
         maxs = PLYHULL_MAXS,
         mask = MASK_PLAYERSOLID,
         collisiongroup = COLLISION_GROUP_PLAYER,
-        filter= TODO,
+        filter = radialFilter,
     } )
 
     -- Look downwards for a floor within reasonable distance.
