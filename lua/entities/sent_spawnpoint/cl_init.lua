@@ -214,7 +214,7 @@ function ENT:Think()
     -- Doesn't check draw distance, as :Draw() isn't called when alpha is zero, so it would need to be checked manually, defeating the purpose of the optimization.
     if color.a ~= LEGAL_ALPHA then
         color.a = LEGAL_ALPHA
-        entMeta.SetColor( self, LEGAL_COLOR )
+        entMeta.SetColor( self, color )
     end
 
     if entMeta.GetMaterial( self ) ~= LEGAL_MATERIAL then
