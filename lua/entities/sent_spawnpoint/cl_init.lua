@@ -193,8 +193,9 @@ function ENT:TryDrawSpawnRadius( myTbl )
         cam.PopModelMatrix()
 
         -- Draw circle outline
-        surface.DrawCircle( 0, 0, radius, 0, 0, 255, 255 )
-
+        for i = 0, 4 do
+            surface.DrawCircle( 0, 0, radius - i, 0, 0, 255, 255 )
+        end
     cam.PopModelMatrix()
 end
 
