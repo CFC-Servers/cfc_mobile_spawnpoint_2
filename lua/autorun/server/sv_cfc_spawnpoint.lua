@@ -23,10 +23,12 @@ CFC_SpawnPoints.BANNED_TOOLS = {
 
 local COOLDOWN_ON_PLY_SPAWN = CreateConVar( "cfc_spawnpoints_cooldown_on_ply_spawn", 10, { FCVAR_ARCHIVE }, "When a player spawns, they must wait this many seconds before they can create/link spawn points.", 0, 1000 )
 
+local SPAWN_OFFSET_HEIGHT = 16
+local PLYHULL_MINS = Vector( -16, -16, 0 )
+local PLYHULL_MAXS = Vector( 16, 16, 72 )
+
 local commands = CFC_SpawnPoints.COMMANDS
 local bannedTools = CFC_SpawnPoints.BANNED_TOOLS
-
-local spawnOffsetHeight = 16
 
 util.AddNetworkString( "CFC_SpawnPoints_CreationDenied" )
 util.AddNetworkString( "CFC_SpawnPoints_LinkDenySound" )
@@ -58,6 +60,44 @@ function CFC_SpawnPoints.IsCreationBlocked( ply, data )
 end
 
 
+----- PRIVATE FUNCTIONS -----
+
+function calcSpawnPos( spawnPoint, ply )
+    local radius = spawnPoint:GetSpawnRadius()
+    local spawnPos = spawnPoint:GetPos()
+    spawnPos[3] = spawnPos[3] + SPAWN_OFFSET_HEIGHT
+
+    -- Ignore pitifully small spawn radiuses, no need to trace.
+    if radius <= 16 then return spawnPos end
+
+    -- Trace outwards from the spawnpoint.
+    local radiusEff = math.Rand( radius * 0.125, radius )
+    local traceDir = Angle( 0, math.Rand( 0, 360 ), 0 ):Forward()
+    local trRadial = util.TraceHull( {
+        start = spawnPos,
+        endpos = spawnPos + traceDir * radiusEff,
+        mins = PLYHULL_MINS,
+        maxs = PLYHULL_MAXS,
+        mask = MASK_PLAYERSOLID,
+        collisiongroup = COLLISION_GROUP_PLAYER,
+        filter= TODO,
+    } )
+
+    -- Look downwards for a floor within reasonable distance.
+    local radialPos = trRadial.HitPos - traceDir -- Pull back a little to not immediately hit whatever trRadial hit.
+    local trFloor = util.TraceHull( {
+        start = radialPos,
+        endpos = radialPos + Vector( 0, 0, -radiusEff ),
+        mins = PLYHULL_MINS,
+        maxs = PLYHULL_MAXS,
+        mask = MASK_PLAYERSOLID,
+        collisiongroup = COLLISION_GROUP_PLAYER,
+    } )
+
+    return trFloor.HitPos + Vector( 0, 0, 1 )
+end
+
+
 ----- SETUP -----
 
 hook.Add( "PlayerSpawn", "SpawnPointHook", function( ply )
@@ -69,8 +109,7 @@ hook.Add( "PlayerSpawn", "SpawnPointHook", function( ply )
         return
     end
 
-    local spawnPos = spawnPoint:GetPos() + Vector( 0, 0, spawnOffsetHeight )
-    ply:SetPos( spawnPos )
+    ply:SetPos( calcSpawnPos( spawnPoint, ply ) )
     spawnPoint:OnSpawnedPlayer( ply )
 end )
 

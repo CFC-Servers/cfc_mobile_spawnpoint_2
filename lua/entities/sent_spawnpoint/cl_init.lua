@@ -45,6 +45,8 @@ surface.CreateFont( "CFC_SpawnPoints_3D2DMessage", {
     shadow = false,
 } )
 
+local spawnRadiusMatrix = Matrix()
+
 
 ----- PRIVATE FUNCTIONS -----
 
@@ -75,6 +77,7 @@ function ENT:Draw()
     local myTbl = entMeta.GetTable( self )
     entMeta.DrawModel( self )
     myTbl.TryDrawMessage( self, myTbl )
+    myTbl.TryDrawSpawnRadius( self, myTbl )
 end
 
 function ENT:TryDrawMessage( myTbl )
@@ -144,6 +147,25 @@ function ENT:TryDrawMessage( myTbl )
             self:DrawMessage( string.format( MESSAGE_TEXT_LINKHINT, string.upper( useKey ) ), MESSAGE_COLOR_LINKHINT, alpha )
         end
     end
+end
+
+function ENT:TryDrawSpawnRadius( myTbl )
+    local endTime = myTbl._showSpawnRadiusEndTime
+    if not endTime then return end
+
+    local radius = self:GetSpawnRadius()
+
+    if radius < 16 or CurTime() > endTime then
+        myTbl._showSpawnRadiusEndTime = nil
+        return
+    end
+
+    spawnRadiusMatrix:SetTranslation( entMeta.GetPos( self ) )
+    spawnRadiusMatrix:SetAngles( entMeta.GetAngles( self ) )
+
+    cam.PushModelMatrix( spawnRadiusMatrix, true )
+    surface.DrawCircle( 0, 0, radius, 255, 150, 50, 255 )
+    cam.PopModelMatrix()
 end
 
 function ENT:DrawMessage( text, color, alpha, zOffset )
