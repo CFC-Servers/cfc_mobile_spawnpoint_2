@@ -221,7 +221,7 @@ function ENT:Think()
         entMeta.SetMaterial( self, LEGAL_MATERIAL )
     end
 
-    self:NextThink( CurTime() )
+    entMeta.NextThink( self, CurTime() )
 
     return true
 end
