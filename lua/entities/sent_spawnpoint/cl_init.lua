@@ -171,8 +171,10 @@ function ENT:TryDrawSpawnRadius( myTbl )
     -- Don't draw if unfriendly.
     if not myTbl._isFriendlyCache then return end
 
+    radius = math.Round( radius ) -- surface.DrawCircle() only deals in whole numbers, so round it to make tboth circles line up.
     circleScaleVec[1] = radius
     circleScaleVec[2] = radius
+
     spawnRadiusMatrix:SetTranslation( entMeta.GetPos( self ) )
     spawnRadiusCircleMatrix:SetScale( circleScaleVec )
 
