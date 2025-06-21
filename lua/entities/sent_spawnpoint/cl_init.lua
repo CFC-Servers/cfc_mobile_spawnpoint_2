@@ -71,7 +71,6 @@ function ENT:Initialize()
     self._inDrawDistance = false
     self._isFriendlyCache = false
     self._nextFriendlinessCacheTime = 0
-    self._lastDrawDist = 0
 end
 
 function ENT:Draw()
@@ -85,8 +84,6 @@ function ENT:TryDrawMessage( myTbl )
     local ply = LocalPlayer()
     local myPos = entMeta.GetPos( self )
     local eyeDist = vecMeta.Distance( EyePos(), myPos )
-
-    myTbl._lastDrawDist = eyeDist
 
     -- Draw distance check.
     if eyeDist > MESSAGE_DRAW_DISTANCE then
@@ -163,9 +160,8 @@ function ENT:TryDrawSpawnRadius( myTbl )
         return
     end
 
-    -- Don't draw if unfriendly or outside of both draw distance and spawn radius.
+    -- Don't draw if unfriendly.
     if not myTbl._isFriendlyCache then return end
-    if not myTbl._inDrawDistance and myTbl._lastDrawDist > radius * 1.25 then return end
 
     spawnRadiusMatrix:SetTranslation( entMeta.GetPos( self ) )
     spawnRadiusMatrix:SetAngles( entMeta.GetAngles( self ) )
