@@ -46,6 +46,14 @@ surface.CreateFont( "CFC_SpawnPoints_3D2DMessage", {
 } )
 
 local spawnRadiusMatrix = Matrix()
+spawnRadiusMatrix:SetAngles( Angle( 0, 0, 180 ) )
+
+local upsideDownMatrix = Matrix()
+upsideDownMatrix:SetAngles( Angle( 0, 0, 180 ) )
+
+local spawnRadiusCircleMatrix = Matrix()
+local circlePoly = {}
+local circleScaleVec = Vector( 1, 1, 1 )
 
 
 ----- PRIVATE FUNCTIONS -----
@@ -75,9 +83,9 @@ end
 
 function ENT:Draw()
     local myTbl = entMeta.GetTable( self )
+    myTbl.TryDrawSpawnRadius( self, myTbl )
     entMeta.DrawModel( self )
     myTbl.TryDrawMessage( self, myTbl )
-    myTbl.TryDrawSpawnRadius( self, myTbl )
 end
 
 function ENT:TryDrawMessage( myTbl )
@@ -163,11 +171,28 @@ function ENT:TryDrawSpawnRadius( myTbl )
     -- Don't draw if unfriendly.
     if not myTbl._isFriendlyCache then return end
 
+    circleScaleVec[1] = radius
+    circleScaleVec[2] = radius
     spawnRadiusMatrix:SetTranslation( entMeta.GetPos( self ) )
-    spawnRadiusMatrix:SetAngles( entMeta.GetAngles( self ) )
+    spawnRadiusCircleMatrix:SetScale( circleScaleVec )
 
-    cam.PushModelMatrix( spawnRadiusMatrix, true )
-    surface.DrawCircle( 0, 0, radius, 255, 150, 50, 255 )
+    cam.PushModelMatrix( spawnRadiusMatrix, true ) -- Handle position (no rotation, as the spawn system doesn't use it either)
+        -- Filled circle
+        cam.PushModelMatrix( spawnRadiusCircleMatrix, true ) -- Scale by radius, so circlePoly isn't recreated every frame
+            -- Draw poly
+            surface.SetDrawColor( 255, 190, 130, 100 )
+            draw.NoTexture()
+            surface.DrawPoly( circlePoly )
+
+            -- Draw upside down as well, since DrawPoly is one-sided
+            cam.PushModelMatrix( upsideDownMatrix, true )
+                surface.DrawPoly( circlePoly )
+            cam.PopModelMatrix()
+        cam.PopModelMatrix()
+
+        -- Draw circle outline
+        surface.DrawCircle( 0, 0, radius, 255, 150, 50, 255 )
+
     cam.PopModelMatrix()
 end
 
@@ -254,4 +279,21 @@ function ENT:Think()
     entMeta.SetNextClientThink( self, 0 )
 
     return true
+end
+
+
+----- SETUP -----
+
+do -- circlePoly
+    local segCount = 64
+
+    table.insert( circlePoly, { x = 0, y = 0 } )
+
+    for i = 0, segCount do
+        local a = math.rad( ( i / segCount ) * -360 )
+        table.insert( circlePoly, { x = math.sin( a ), y = math.cos( a ) } )
+    end
+
+    local a = math.rad( 0 )
+    table.insert( circlePoly, { x = math.sin( a ), y = math.cos( a ) } )
 end
