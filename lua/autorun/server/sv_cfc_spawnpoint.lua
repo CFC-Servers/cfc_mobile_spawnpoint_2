@@ -19,7 +19,6 @@ CFC_SpawnPoints.BANNED_TOOLS = {
     ["submaterial"] = true,
     ["fadingdoor"] = true,
     ["fading_door"] = true,
-    ["colour"] = true,
 }
 
 local COOLDOWN_ON_PLY_SPAWN = CreateConVar( "cfc_spawnpoints_cooldown_on_ply_spawn", 10, { FCVAR_ARCHIVE }, "When a player spawns, they must wait this many seconds before they can create/link spawn points.", 0, 1000 )
