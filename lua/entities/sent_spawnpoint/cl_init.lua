@@ -208,7 +208,7 @@ end
 
 function ENT:Think()
     if entMeta.IsDormant( self ) then
-        entMeta.NextThink( self, CurTime() + 1 )
+        entMeta.SetNextClientThink( self, CurTime() + 1 )
         return true
     end
 
@@ -226,7 +226,7 @@ function ENT:Think()
         entMeta.SetMaterial( self, LEGAL_MATERIAL )
     end
 
-    entMeta.NextThink( self, 0 )
+    entMeta.SetNextClientThink( self, 0 )
 
     return true
 end
