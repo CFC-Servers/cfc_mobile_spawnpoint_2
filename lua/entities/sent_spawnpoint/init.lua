@@ -22,8 +22,6 @@ local EFF_UNLINK_COLOR_ANG = Angle( 70, 0, 140 )
 local REGEN_SOUND = "ambient/levels/canals/manhack_machine_loop1.wav"
 
 local LEGAL_CHECK_INTERVAL = 5
-local LEGAL_MATERIAL = ""
-local LEGAL_ALPHA = 255
 local LEGAL_COLGROUP_MAIN = COLLISION_GROUP_NONE
 local LEGAL_COLGROUPS = {
     [COLLISION_GROUP_NONE] = true,
@@ -353,17 +351,6 @@ function ENT:EnforceLegality( myTbl )
 
     if myTbl._nextLegalCheck > CurTime() then return end
     myTbl._nextLegalCheck = CurTime() + LEGAL_CHECK_INTERVAL
-
-    local color = entMeta.GetColor( self )
-
-    if color.a ~= LEGAL_ALPHA then
-        color.a = LEGAL_ALPHA
-        entMeta.SetColor( self, LEGAL_COLOR )
-    end
-
-    if entMeta.GetMaterial( self ) ~= LEGAL_MATERIAL then
-        entMeta.SetMaterial( self, LEGAL_MATERIAL )
-    end
 
     if not entMeta.IsSolid( self ) then
         entMeta.SetSolid( self, SOLID_VPHYSICS )

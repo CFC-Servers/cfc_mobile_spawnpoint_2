@@ -5,6 +5,9 @@ local vecMeta = FindMetaTable( "Vector" )
 local LocalPlayer = LocalPlayer
 local EyePos = EyePos
 
+local LEGAL_MATERIAL = ""
+local LEGAL_ALPHA = 255
+
 local MESSAGE_DRAW_DISTANCE = 500
 local MESSAGE_FADE_START_DISTANCE = 300 -- 0 to disable fading
 local MESSAGE_BOTTOM_HEIGHT = 20
@@ -201,4 +204,25 @@ function ENT:UpdateFriendlinessCache( force )
     end
 
     self._isFriendlyCache = CFC_SpawnPoints.IsFriendly( self, LocalPlayer() )
+end
+
+function ENT:Think()
+    self:NextThink( CurTime() )
+    local color = entMeta.GetColor( self )
+
+    -- Enforce color and material in clientside think, to combat serverside setcolor-on-tick.
+    -- Also less serverside perf cost, no networking nonsense, and only applies within PVS.
+    -- Doesn't check draw distance, as :Draw() isn't called when alpha is zero, so it would need to be checked manually, defeating the purpose of the optimization.
+    if color.a ~= LEGAL_ALPHA then
+        color.a = LEGAL_ALPHA
+        entMeta.SetColor( self, LEGAL_COLOR )
+    end
+
+    if entMeta.GetMaterial( self ) ~= LEGAL_MATERIAL then
+        entMeta.SetMaterial( self, LEGAL_MATERIAL )
+    end
+
+    self:NextThink( CurTime() )
+
+    return true
 end
