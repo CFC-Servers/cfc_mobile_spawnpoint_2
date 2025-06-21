@@ -351,7 +351,7 @@ end
 function ENT:EnforceLegality( myTbl )
     myTbl = myTbl or entMeta.GetTable( self )
 
-    if myTbl._nextLegalCheck < CurTime() then return end
+    if myTbl._nextLegalCheck > CurTime() then return end
     myTbl._nextLegalCheck = CurTime() + LEGAL_CHECK_INTERVAL
 
     local color = entMeta.GetColor( self )
