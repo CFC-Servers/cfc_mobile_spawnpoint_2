@@ -165,6 +165,7 @@ function ENT:TryDrawSpawnRadius( myTbl )
 
     if radius < 16 or CurTime() > endTime then
         myTbl._showSpawnRadiusEndTime = nil
+        self:SetRenderBounds( self:OBBMins(), self:OBBMaxs() )
         return
     end
 

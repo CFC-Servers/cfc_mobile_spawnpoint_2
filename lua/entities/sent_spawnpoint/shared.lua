@@ -17,7 +17,8 @@ function ENT:SetupDataTables()
 
     if SERVER then return end
 
-    self:NetworkVarNotify( "SpawnRadius", function( ent )
+    self:NetworkVarNotify( "SpawnRadius", function( ent, _, _, radius )
         ent._showSpawnRadiusEndTime = CurTime() + 5
+        ent:SetRenderBounds( Vector( -radius, -radius, -radius ), Vector( radius, radius, radius ) )
     end )
 end
