@@ -175,9 +175,13 @@ function ENT:TryDrawSpawnRadius( myTbl )
     circleScaleVec[1] = radius
     circleScaleVec[2] = radius
 
-    spawnRadiusMatrix:SetTranslation( entMeta.GetPos( self ) )
+    local pos = entMeta.GetPos( self )
+    pos[3] = pos[3] + 1 -- Avoid z-fighting with the ground.
+
+    spawnRadiusMatrix:SetTranslation( pos )
     spawnRadiusCircleMatrix:SetScale( circleScaleVec )
 
+    render.OverrideDepthEnable( true, true )
     cam.PushModelMatrix( spawnRadiusMatrix, true ) -- Handle position (no rotation, as the spawn system doesn't use it either)
         -- Filled circle
         cam.PushModelMatrix( spawnRadiusCircleMatrix, true ) -- Scale by radius, so circlePoly isn't recreated every frame
@@ -197,6 +201,7 @@ function ENT:TryDrawSpawnRadius( myTbl )
             surface.DrawCircle( 0, 0, radius - i, 0, 0, 255, 255 )
         end
     cam.PopModelMatrix()
+    render.OverrideDepthEnable( false )
 end
 
 function ENT:DrawMessage( text, color, alpha, zOffset )
