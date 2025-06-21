@@ -207,7 +207,6 @@ function ENT:UpdateFriendlinessCache( force )
 end
 
 function ENT:Think()
-    self:NextThink( CurTime() )
     local color = entMeta.GetColor( self )
 
     -- Enforce color and material in clientside think, to combat serverside setcolor-on-tick.
