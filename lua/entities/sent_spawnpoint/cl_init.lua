@@ -45,6 +45,16 @@ surface.CreateFont( "CFC_SpawnPoints_3D2DMessage", {
     shadow = false,
 } )
 
+local spawnRadiusMatrix = Matrix()
+spawnRadiusMatrix:SetAngles( Angle( 0, 0, 180 ) )
+
+local upsideDownMatrix = Matrix()
+upsideDownMatrix:SetAngles( Angle( 0, 0, 180 ) )
+
+local spawnRadiusCircleMatrix = Matrix()
+local circlePoly = {}
+local circleScaleVec = Vector( 1, 1, 1 )
+
 
 ----- PRIVATE FUNCTIONS -----
 
@@ -73,6 +83,7 @@ end
 
 function ENT:Draw()
     local myTbl = entMeta.GetTable( self )
+    myTbl.TryDrawSpawnRadius( self, myTbl )
     entMeta.DrawModel( self )
     myTbl.TryDrawMessage( self, myTbl )
 end
@@ -144,6 +155,54 @@ function ENT:TryDrawMessage( myTbl )
             self:DrawMessage( string.format( MESSAGE_TEXT_LINKHINT, string.upper( useKey ) ), MESSAGE_COLOR_LINKHINT, alpha )
         end
     end
+end
+
+function ENT:TryDrawSpawnRadius( myTbl )
+    local endTime = myTbl._showSpawnRadiusEndTime
+    if not endTime then return end
+
+    local radius = self:GetSpawnRadius()
+
+    if radius < 16 or CurTime() > endTime then
+        myTbl._showSpawnRadiusEndTime = nil
+        self:SetRenderBounds( self:OBBMins(), self:OBBMaxs() )
+        return
+    end
+
+    -- Don't draw if unfriendly.
+    if not myTbl._isFriendlyCache then return end
+
+    radius = math.Round( radius ) -- surface.DrawCircle() only deals in whole numbers, so round it to make tboth circles line up.
+    circleScaleVec[1] = radius
+    circleScaleVec[2] = radius
+
+    local pos = entMeta.GetPos( self )
+    pos[3] = pos[3] + 1 -- Avoid z-fighting with the ground.
+
+    spawnRadiusMatrix:SetTranslation( pos )
+    spawnRadiusCircleMatrix:SetScale( circleScaleVec )
+
+    render.OverrideDepthEnable( true, true )
+    cam.PushModelMatrix( spawnRadiusMatrix, true ) -- Handle position (no rotation, as the spawn system doesn't use it either)
+        -- Filled circle
+        cam.PushModelMatrix( spawnRadiusCircleMatrix, true ) -- Scale by radius, so circlePoly isn't recreated every frame
+            -- Draw poly
+            surface.SetDrawColor( 100, 190, 255, 100 )
+            draw.NoTexture()
+            surface.DrawPoly( circlePoly )
+
+            -- Draw upside down as well, since DrawPoly is one-sided
+            cam.PushModelMatrix( upsideDownMatrix, true )
+                surface.DrawPoly( circlePoly )
+            cam.PopModelMatrix()
+        cam.PopModelMatrix()
+
+        -- Draw circle outline
+        for i = 0, 4 do
+            surface.DrawCircle( 0, 0, radius - i, 0, 0, 255, 255 )
+        end
+    cam.PopModelMatrix()
+    render.OverrideDepthEnable( false )
 end
 
 function ENT:DrawMessage( text, color, alpha, zOffset )
@@ -229,4 +288,21 @@ function ENT:Think()
     entMeta.SetNextClientThink( self, 0 )
 
     return true
+end
+
+
+----- SETUP -----
+
+do -- circlePoly
+    local segCount = 64
+
+    table.insert( circlePoly, { x = 0, y = 0 } )
+
+    for i = 0, segCount do
+        local a = math.rad( ( i / segCount ) * -360 )
+        table.insert( circlePoly, { x = math.sin( a ), y = math.cos( a ) } )
+    end
+
+    local a = math.rad( 0 )
+    table.insert( circlePoly, { x = math.sin( a ), y = math.cos( a ) } )
 end

@@ -20,6 +20,7 @@ local EFF_LINK_COLOR_ANG = Angle( 50, 255, 50 )
 local EFF_UNLINK_COLOR_ANG = Angle( 70, 0, 140 )
 
 local REGEN_SOUND = "ambient/levels/canals/manhack_machine_loop1.wav"
+local SPAWN_RADIUS_DEFAULT = 150
 
 local LEGAL_CHECK_INTERVAL = 5
 local LEGAL_COLGROUP_MAIN = COLLISION_GROUP_NONE
@@ -124,6 +125,10 @@ function ENT:SpawnFunction( ply, tr )
         ent:SetPos( pos )
     end )
 
+    if IsValid( ent ) then
+        ent:SetSpawnRadius( SPAWN_RADIUS_DEFAULT )
+    end
+
     return ent
 end
 
@@ -172,6 +177,13 @@ function ENT:Initialize()
     end
 
     self:EnforceLegality() -- enforce once on spawn
+end
+
+function ENT:OnDuplicated( data )
+    local DT = data.DT
+    if not DT then return end
+
+    self:SetSpawnRadius( DT.SpawnRadius or SPAWN_RADIUS_DEFAULT )
 end
 
 function ENT:OnRemove()
@@ -409,3 +421,12 @@ function ENT:PhysicsCollide() end
 
 -- Needed to prevent dupes from bypassing the spawn limit
 duplicator.RegisterEntityClass( "sent_spawnpoint", makeSpawnPoint, "Data" )
+
+hook.Add( "CanEditVariable", "CFC_SpawnPoints_CanEdit", function( ent, ply )
+    if not IsValid( ent ) or ent:GetClass() ~= "sent_spawnpoint" then return end
+    if ply:IsSuperAdmin() then return true end
+    if CFC_SpawnPoints.IsFriendly( ent, ply ) then return true end
+    if ent.CPPICanTool then return ent:CPPICanTool( ply, "" ) end
+
+    return ent:GetCreatingPlayer() == ply()
+end )
