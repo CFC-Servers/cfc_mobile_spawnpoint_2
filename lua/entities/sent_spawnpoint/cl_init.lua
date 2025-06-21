@@ -182,7 +182,7 @@ function ENT:TryDrawSpawnRadius( myTbl )
         -- Filled circle
         cam.PushModelMatrix( spawnRadiusCircleMatrix, true ) -- Scale by radius, so circlePoly isn't recreated every frame
             -- Draw poly
-            surface.SetDrawColor( 255, 190, 130, 100 )
+            surface.SetDrawColor( 100, 190, 255, 100 )
             draw.NoTexture()
             surface.DrawPoly( circlePoly )
 
@@ -193,7 +193,7 @@ function ENT:TryDrawSpawnRadius( myTbl )
         cam.PopModelMatrix()
 
         -- Draw circle outline
-        surface.DrawCircle( 0, 0, radius, 255, 150, 50, 255 )
+        surface.DrawCircle( 0, 0, radius, 0, 0, 255, 255 )
 
     cam.PopModelMatrix()
 end
