@@ -62,7 +62,7 @@ end
 
 ----- PRIVATE FUNCTIONS -----
 
-function calcSpawnPos( spawnPoint, ply )
+function calcSpawnPos( spawnPoint, _ply )
     local radius = spawnPoint:GetSpawnRadius()
     local spawnPos = spawnPoint:GetPos()
     spawnPos[3] = spawnPos[3] + SPAWN_OFFSET_HEIGHT
