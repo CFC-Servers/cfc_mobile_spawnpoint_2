@@ -12,6 +12,7 @@ local INTERACT_COOLDOWN = CreateConVar( "cfc_spawnpoints_interact_cooldown", 0.5
 local HEALTH_MAX = CreateConVar( "cfc_spawnpoints_health_max", 1500, { FCVAR_ARCHIVE }, "Max health of spawnpoints. 0 to disable.", 0, 10000 )
 local HEALTH_REGEN = CreateConVar( "cfc_spawnpoints_health_regen", 200, { FCVAR_ARCHIVE }, "Health regenerated per second by spawnpoints. 0 to disable.", 0, 10000 )
 local HEALTH_REGEN_COOLDOWN = CreateConVar( "cfc_spawnpoints_health_regen_cooldown", 10, { FCVAR_ARCHIVE }, "If a spawnpoint takes damage, it must wait this long before it can start regenerating. 0 to disable.", 0, 10000 )
+local COOLDOWN_ON_DESTROY = CreateConVar( "cfc_spawnpoints_cooldown_on_destroy", 15, { FCVAR_ARCHIVE }, "When a spawnpoint is destroyed, the connected players must wait this many seconds before they can create/link spawn points.", 0, 1000 )
 
 local EFF_SPAWN_COLOR_ANG = Angle( 150, 150, 255 )
 local EFF_COOLDOWN_FINISHED_COLOR_ANG = Angle( 150, 255, 150 )
@@ -311,13 +312,23 @@ function ENT:OnDied()
     local boxC = self:WorldSpaceCenter()
     for _ = 1, 6 do
         miniSpark( boxC, math.Rand( 0.5, 1.5 ) )
-
     end
 
     util.BlastDamage( self, self, boxC, 120, 5 ) -- 5 damage explosion, practically just fluff
 
     self:EmitSound( "ambient/fire/gascan_ignite1.wav", 80, math.random( 90, 100 ), 1, CHAN_STATIC )
     self:EmitSound( "npc/scanner/cbot_energyexplosion1.wav", 80, math.random( 120, 130 ), 1, CHAN_STATIC )
+
+    local cooldown = COOLDOWN_ON_DESTROY:GetFloat()
+    if cooldown <= 0 then return end
+
+    local cooldownEndTime = CurTime() + cooldown
+
+    for _, ply in ipairs( self._linkedPlayers ) do
+        if IsValid( ply ) then
+            CFC_SpawnPoints.SetSpawnCooldownEndTime( ply, cooldownEndTime )
+        end
+    end
 end
 
 function ENT:OnSpawnedPlayer()
