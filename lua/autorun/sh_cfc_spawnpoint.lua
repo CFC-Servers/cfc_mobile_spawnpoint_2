@@ -45,7 +45,7 @@ function CFC_SpawnPoints.IsFriendly( spawnPoint, ply )
 end
 
 function CFC_SpawnPoints.SetSpawnCooldownEndTime( ply, time )
-    ply._cfcSpawnPoints_SpawnCooldownEndTime = time
+    ply._cfcSpawnPoints_SpawnCooldownEndTime = math.max( time, ply._cfcSpawnPoints_SpawnCooldownEndTime or 0 )
 
     if CLIENT then return end
 
