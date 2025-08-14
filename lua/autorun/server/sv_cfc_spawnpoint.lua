@@ -125,6 +125,15 @@ hook.Add( "PlayerSpawn", "SpawnPointHook", function( ply )
         return
     end
 
+    local pos = spawnPoint:GetPos()
+    local mins = spawnPoint:OBBMins()
+    mins[3] = 0
+
+    if util.TraceHull( pos, pos, mins, spawnPoint:OBBMaxs(), nil, MASK_SOLID_BRUSHONLY, COLLISION_GROUP_WORLD ).HitWorld then
+        ply:ChatPrint( "Your linked spawn point is in an invalid location" )
+        return
+    end
+
     ply:SetPos( calcSpawnPos( spawnPoint, ply ) )
     spawnPoint:OnSpawnedPlayer( ply )
 end )
