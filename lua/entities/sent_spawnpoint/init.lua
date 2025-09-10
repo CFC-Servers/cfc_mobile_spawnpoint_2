@@ -11,8 +11,10 @@ local COOLDOWN_ON_POINT_SPAWN = CreateConVar( "cfc_spawnpoints_cooldown_on_point
 local INTERACT_COOLDOWN = CreateConVar( "cfc_spawnpoints_interact_cooldown", 0.5, { FCVAR_ARCHIVE }, "Per-player interaction cooldown for spawn points.", 0, 1000 )
 local HEALTH_MAX = CreateConVar( "cfc_spawnpoints_health_max", 1500, { FCVAR_ARCHIVE }, "Max health of spawnpoints. 0 to disable.", 0, 10000 )
 local HEALTH_REGEN = CreateConVar( "cfc_spawnpoints_health_regen", 200, { FCVAR_ARCHIVE }, "Health regenerated per second by spawnpoints. 0 to disable.", 0, 10000 )
-local HEALTH_REGEN_COOLDOWN = CreateConVar( "cfc_spawnpoints_health_regen_cooldown", 10, { FCVAR_ARCHIVE }, "If a spawnpoint takes damage, it must wait this long before it can start regenerating. 0 to disable.", 0, 10000 )
-local COOLDOWN_ON_DESTROY = CreateConVar( "cfc_spawnpoints_cooldown_on_destroy", 15, { FCVAR_ARCHIVE }, "When a spawnpoint is destroyed, the connected players must wait this many seconds before they can create/link spawn points.", 0, 1000 )
+local HEALTH_REGEN_COOLDOWN = CreateConVar( "cfc_spawnpoints_health_regen_cooldown", 10, { FCVAR_ARCHIVE },
+    "If a spawnpoint takes damage, it must wait this long before it can start regenerating. 0 to disable.", 0, 10000 )
+local COOLDOWN_ON_DESTROY = CreateConVar( "cfc_spawnpoints_cooldown_on_destroy", 15, { FCVAR_ARCHIVE },
+    "When a spawnpoint is destroyed, the connected players must wait this many seconds before they can create/link spawn points.", 0, 1000 )
 
 local EFF_SPAWN_COLOR_ANG = Angle( 150, 150, 255 )
 local EFF_COOLDOWN_FINISHED_COLOR_ANG = Angle( 150, 255, 150 )
@@ -91,6 +93,9 @@ local function makeSpawnPoint( ply, data )
 
     local ent = ents.Create( "sent_spawnpoint" )
     if not ent:IsValid() then return end
+
+
+    data.DT = nil
 
     duplicator.DoGeneric( ent, data )
     ent:Spawn()
@@ -427,12 +432,10 @@ function ENT:PhysicsUpdate() end
 
 function ENT:PhysicsCollide() end
 
-
 ----- SETUP -----
 
 -- Needed to prevent dupes from bypassing the spawn limit
 duplicator.RegisterEntityClass( "sent_spawnpoint", makeSpawnPoint, "Data" )
-
 hook.Add( "CanEditVariable", "CFC_SpawnPoints_CanEdit", function( ent, ply )
     if not IsValid( ent ) or ent:GetClass() ~= "sent_spawnpoint" then return end
     if ply:IsSuperAdmin() then return true end
