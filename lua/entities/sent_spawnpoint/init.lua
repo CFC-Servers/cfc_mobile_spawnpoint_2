@@ -15,6 +15,7 @@ local HEALTH_REGEN_COOLDOWN = CreateConVar( "cfc_spawnpoints_health_regen_cooldo
     "If a spawnpoint takes damage, it must wait this long before it can start regenerating. 0 to disable.", 0, 10000 )
 local COOLDOWN_ON_DESTROY = CreateConVar( "cfc_spawnpoints_cooldown_on_destroy", 15, { FCVAR_ARCHIVE },
     "When a spawnpoint is destroyed, the connected players must wait this many seconds before they can create/link spawn points.", 0, 1000 )
+local EXPLOSION_DAMAGE_MULT = CreateConVar( "cfc_spawnpoints_explosion_damage_mult", 0.1, { FCVAR_ARCHIVE }, "Multiplier for explosion damage received by spawnpoints.", 0, 10 )
 
 local EFF_SPAWN_COLOR_ANG = Angle( 150, 150, 255 )
 local EFF_COOLDOWN_FINISHED_COLOR_ANG = Angle( 150, 255, 150 )
@@ -402,7 +403,13 @@ function ENT:OnTakeDamage( dmg )
     if self._dyingSpawnpoint then return end
 
     local health = self:GetPointHealth()
-    local newHealth = health - dmg:GetDamage()
+    local damage = dmg:GetDamage()
+
+    if dmg:IsExplosionDamage() then
+        damage = damage * EXPLOSION_DAMAGE_MULT:GetFloat()
+    end
+
+    local newHealth = health - damage
 
     if self._playingRegenSound then
         self._playingRegenSound = false
