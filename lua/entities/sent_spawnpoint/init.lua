@@ -9,12 +9,13 @@ local CurTime = CurTime
 
 local COOLDOWN_ON_POINT_SPAWN = CreateConVar( "cfc_spawnpoints_cooldown_on_point_spawn", 5, { FCVAR_ARCHIVE }, "When a spawn point is created, it cannot be linked to for this many seconds.", 0, 1000 )
 local INTERACT_COOLDOWN = CreateConVar( "cfc_spawnpoints_interact_cooldown", 0.5, { FCVAR_ARCHIVE }, "Per-player interaction cooldown for spawn points.", 0, 1000 )
-local HEALTH_MAX = CreateConVar( "cfc_spawnpoints_health_max", 1500, { FCVAR_ARCHIVE }, "Max health of spawnpoints. 0 to disable.", 0, 10000 )
+local HEALTH_MAX = CreateConVar( "cfc_spawnpoints_health_max", 300, { FCVAR_ARCHIVE }, "Max health of spawnpoints. 0 to disable.", 0, 10000 )
 local HEALTH_REGEN = CreateConVar( "cfc_spawnpoints_health_regen", 200, { FCVAR_ARCHIVE }, "Health regenerated per second by spawnpoints. 0 to disable.", 0, 10000 )
 local HEALTH_REGEN_COOLDOWN = CreateConVar( "cfc_spawnpoints_health_regen_cooldown", 10, { FCVAR_ARCHIVE },
     "If a spawnpoint takes damage, it must wait this long before it can start regenerating. 0 to disable.", 0, 10000 )
 local COOLDOWN_ON_DESTROY = CreateConVar( "cfc_spawnpoints_cooldown_on_destroy", 15, { FCVAR_ARCHIVE },
     "When a spawnpoint is destroyed, the connected players must wait this many seconds before they can create/link spawn points.", 0, 1000 )
+local EXPLOSION_DAMAGE_MULT = CreateConVar( "cfc_spawnpoints_explosion_damage_mult", 0.5, { FCVAR_ARCHIVE }, "Multiplier for explosion damage received by spawnpoints.", 0, 10 )
 
 local EFF_SPAWN_COLOR_ANG = Angle( 150, 150, 255 )
 local EFF_COOLDOWN_FINISHED_COLOR_ANG = Angle( 150, 255, 150 )
@@ -222,7 +223,9 @@ function ENT:OnRemove()
     end
 end
 
-function ENT:Use( ply )
+function ENT:Use( ply, caller )
+    if caller ~= ply then return end -- Only allow direct use.
+
     local interactCooldown = INTERACT_COOLDOWN:GetFloat()
 
     if interactCooldown > 0 then
@@ -295,20 +298,20 @@ function ENT:UnlinkPlayer( ply )
     self._linkedPlayers[ply] = nil
 end
 
-function ENT:UnlinkAllPlayers()
+function ENT:UnlinkAllPlayers( msg )
     for ply in pairs( self._linkedPlayers ) do
         if IsValid( ply ) then
             self:UnlinkPlayer( ply )
-            ply:PrintMessage( 4, "You've been unlinked from a Spawn Point!" )
+            ply:PrintMessage( 4, msg or "You've been unlinked from a Spawn Point!" )
         end
     end
 end
 
-function ENT:UnlinkAllPlayersExcept( excludedPlayersLookup )
+function ENT:UnlinkAllPlayersExcept( excludedPlayersLookup, msg )
     for ply in pairs( self._linkedPlayers ) do
         if IsValid( ply ) and not excludedPlayersLookup[ply] then
             self:UnlinkPlayer( ply )
-            ply:PrintMessage( 4, "You've been unlinked from a Spawn Point!" )
+            ply:PrintMessage( 4, msg or "You've been unlinked from a Spawn Point!" )
         end
     end
 end
@@ -400,7 +403,13 @@ function ENT:OnTakeDamage( dmg )
     if self._dyingSpawnpoint then return end
 
     local health = self:GetPointHealth()
-    local newHealth = health - dmg:GetDamage()
+    local damage = dmg:GetDamage()
+
+    if dmg:IsExplosionDamage() then
+        damage = damage * EXPLOSION_DAMAGE_MULT:GetFloat()
+    end
+
+    local newHealth = health - math.max( damage, 0 )
 
     if self._playingRegenSound then
         self._playingRegenSound = false
