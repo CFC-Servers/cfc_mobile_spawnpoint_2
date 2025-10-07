@@ -120,10 +120,6 @@ hook.Add( "PlayerSpawn", "SpawnPointHook", function( ply )
     local spawnPoint = CFC_SpawnPoints.GetLinkedSpawnPoint( ply )
     if not IsValid( spawnPoint ) then return end
 
-    -- Enforce movement check immediately to prevent the point being moved back and forth with hooks.
-    spawnPoint:DetectMovement( spawnPoint:GetTable() )
-    if CFC_SpawnPoints.GetLinkedSpawnPoint( ply ) ~= spawnPoint then return end
-
     if not spawnPoint:IsInWorld() then
         ply:ChatPrint( "Your linked spawn point is in an invalid location" )
         return
