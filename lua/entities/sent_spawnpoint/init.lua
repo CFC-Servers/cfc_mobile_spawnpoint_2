@@ -489,7 +489,7 @@ function ENT:OnTakeDamage( dmg )
         damage = damage * EXPLOSION_DAMAGE_MULT:GetFloat()
     end
 
-    local newHealth = health - damage
+    local newHealth = health - math.max( damage, 0 )
 
     if self._playingRegenSound then
         self._playingRegenSound = false
