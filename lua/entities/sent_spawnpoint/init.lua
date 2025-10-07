@@ -25,9 +25,6 @@ local EFF_UNLINK_COLOR_ANG = Angle( 70, 0, 140 )
 
 local REGEN_SOUND = "ambient/levels/canals/manhack_machine_loop1.wav"
 local SPAWN_RADIUS_DEFAULT = 250
-local VECTOR_ZERO = Vector( 0, 0, 0 )
-local SPAWNPOINT_HULL_MINS = Vector( -25, -25, 0 )
-local SPAWNPOINT_HULL_MAXS = Vector( 25, 25, 0.01 )
 
 local LEGAL_CHECK_INTERVAL = 5
 local LEGAL_COLGROUP_MAIN = COLLISION_GROUP_NONE
@@ -416,44 +413,6 @@ function ENT:DetectMovement( myTbl )
     end
 end
 
-function ENT:EnforcePointExposure( myTbl )
-    if not CPPI then return end -- Without an ownership check, this would do more harm than good.
-    if next( myTbl._linkedPlayers ) == nil then return end -- No linked players.
-
-    local friendlyFunc = CFC_SpawnPoints.IsFriendly
-    local ignoreEnemyEntsFilter = function( ent )
-        if ent == self then return false end -- Also ignore self.
-        if not IsValid( ent ) then return false end
-        if ent:IsPlayer() or ent:IsNPC() or ent:IsNextBot() then return false end -- Also ignore players, NPCs, and NextBots.
-        if not ent.CPPIGetOwner then return true end
-
-        local owner = ent:CPPIGetOwner()
-        if not IsValid( owner ) then return true end
-
-        -- Ignore non-friendly-owned entities, so they can't invalidate a spawnpoint by simply covering it.
-        return friendlyFunc( self, owner )
-    end
-
-    -- Trace outwards from the spawnpoint.
-    local up = entMeta.GetUp( self )
-    local pos = entMeta.GetPos( self )
-    local tr = util.TraceHull( {
-        start = pos + up * 5,
-        endpos = pos + up * 15,
-        mins = SPAWNPOINT_HULL_MINS,
-        maxs = SPAWNPOINT_HULL_MAXS,
-        mask = MASK_SHOT,
-        collisiongroup = COLLISION_GROUP_NONE,
-        filter = ignoreEnemyEntsFilter,
-    } )
-
-    if tr.Hit then
-        self:UnlinkAllPlayers( "Spawn Point unlinked due to being blocked!" )
-        self:EmitSound( "npc/roller/mine/rmine_blades_out2.wav", 90, 90 )
-        doPointEffect( self, EFF_UNLINK_COLOR_ANG )
-    end
-end
-
 function ENT:EnforceLegality( myTbl )
     myTbl = myTbl or entMeta.GetTable( self )
 
@@ -469,7 +428,6 @@ function ENT:EnforceLegality( myTbl )
     end
 
     myTbl.DetectMovement( self, myTbl )
-    myTbl.EnforcePointExposure( self, myTbl )
 end
 
 function ENT:Think()
