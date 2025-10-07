@@ -22,6 +22,9 @@ CFC's refactor of the CFC Mobile SpawnPoint 2
   - Return true or a string to prevent a player from creating a spawn point.
   - Returning a string will display it to the player to show why they couldn't create the spawn point.
   - `data` is a table with keys `Pos` and `Angle`, for where the spawn point will be located.
+- `shouldUnlink = CFC_SpawnPoints_ShouldUnlinkDueToSpawnPointMovement( spawnPoint, ply, prevPos, curPos )`
+  - Called per linked player when a spawnpoint is moved.
+  - Return true to unlink the given player.
 
 
 ## Shared Hooks

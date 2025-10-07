@@ -378,6 +378,38 @@ function ENT:DoHealthRegen( myTbl )
     end
 end
 
+function ENT:DetectMovement( myTbl )
+    local prevPos = myTbl._prevLegalPos
+    local curPos = entMeta.GetPos( self )
+
+    myTbl._prevLegalPos = curPos
+
+    if not prevPos then return end
+    if curPos == prevPos then return end
+
+    local linkedPlayers = myTbl._linkedPlayers
+    local atLeastOneUnlinked = false
+
+    -- Allow servers to unlink players if the spawnpoint gets moved.
+    -- By default, won't unlink anyone.
+    for ply in pairs( linkedPlayers ) do
+        if IsValid( ply ) then
+            if hook.Run( "CFC_SpawnPoints_ShouldUnlinkDueToSpawnPointMovement", self, ply, prevPos, curPos ) then
+                atLeastOneUnlinked = true
+                myTbl.UnlinkPlayer( self, ply )
+                ply:PrintMessage( 4, "Spawn Point unlinked due to being moved!" )
+            end
+        else
+            linkedPlayers[ply] = nil
+        end
+    end
+
+    if atLeastOneUnlinked then
+        self:EmitSound( "npc/roller/mine/rmine_blades_out2.wav", 90, 90 )
+        doPointEffect( self, EFF_UNLINK_COLOR_ANG )
+    end
+end
+
 function ENT:EnforceLegality( myTbl )
     myTbl = myTbl or entMeta.GetTable( self )
 
@@ -391,6 +423,8 @@ function ENT:EnforceLegality( myTbl )
     if not LEGAL_COLGROUPS[entMeta.GetCollisionGroup( self )] then
         entMeta.SetCollisionGroup( self, LEGAL_COLGROUP_MAIN )
     end
+
+    myTbl.DetectMovement( self, myTbl )
 end
 
 function ENT:Think()
