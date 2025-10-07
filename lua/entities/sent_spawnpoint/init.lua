@@ -222,7 +222,9 @@ function ENT:OnRemove()
     end
 end
 
-function ENT:Use( ply )
+function ENT:Use( ply, caller )
+    if caller ~= ply then return end -- Only allow direct use.
+
     local interactCooldown = INTERACT_COOLDOWN:GetFloat()
 
     if interactCooldown > 0 then
