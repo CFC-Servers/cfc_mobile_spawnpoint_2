@@ -482,29 +482,6 @@ function ENT:OnTakeDamage( dmg )
     if self:GetPointMaxHealth() <= 0 then return end
     if self._dyingSpawnpoint then return end
 
-    local attacker = dmg:GetAttacker()
-    if not IsValid( attacker ) then return end
-
-    local startPos
-
-    if attacker:IsPlayer() then
-        startPos = attacker:GetShootPos()
-    else
-        startPos = attacker:LocalToWorld( attacker:OBBCenter() )
-    end
-
-    local tr = util.TraceHull( {
-        start = startPos,
-        endpos = self:LocalToWorld( self:OBBCenter() ),
-        mins = VECTOR_ZERO,
-        maxs = VECTOR_ZERO,
-        filter = attacker,
-        mask = MASK_SHOT,
-        collisiongroup = COLLISION_GROUP_NONE,
-    } )
-
-    if tr.Hit and tr.Entity ~= self then return end -- Require direct line of sight from the attacker (no e2/sf autokill nonsense)
-
     local health = self:GetPointHealth()
     local damage = dmg:GetDamage()
 
