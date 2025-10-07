@@ -254,6 +254,10 @@ function ENT:Use( ply, caller )
             self:EmitSound( "buttons/button17.wav", 85, 90 )
             doPointEffect( self, EFF_LINK_COLOR_ANG )
             ply:PrintMessage( 4, "Spawn Point set. Say !unlinkspawn to unlink" )
+
+            -- Reset previous legal pos so physgunning the point, freezing it, then linking doesn't cause a delayed unlink.
+            -- This shouldn't lead to abuse since :Use() linking requires the player to be alive and nearby.
+            self._prevLegalPos = self:GetPos()
         else
             -- Link Failed
             net.Start( "CFC_SpawnPoints_LinkDenySound" )
