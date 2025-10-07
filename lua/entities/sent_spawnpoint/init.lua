@@ -25,6 +25,7 @@ local EFF_UNLINK_COLOR_ANG = Angle( 70, 0, 140 )
 
 local REGEN_SOUND = "ambient/levels/canals/manhack_machine_loop1.wav"
 local SPAWN_RADIUS_DEFAULT = 250
+local VECTOR_ZERO = Vector( 0, 0, 0 )
 
 local LEGAL_CHECK_INTERVAL = 5
 local LEGAL_COLGROUP_MAIN = COLLISION_GROUP_NONE
@@ -401,6 +402,29 @@ end
 function ENT:OnTakeDamage( dmg )
     if self:GetPointMaxHealth() <= 0 then return end
     if self._dyingSpawnpoint then return end
+
+    local attacker = dmg:GetAttacker()
+    if not IsValid( attacker ) then return end
+
+    local startPos
+
+    if attacker:IsPlayer() then
+        startPos = attacker:GetShootPos()
+    else
+        startPos = attacker:LocalToWorld( attacker:OBBCenter() )
+    end
+
+    local tr = util.TraceHull( {
+        start = startPos,
+        endpos = self:LocalToWorld( self:OBBCenter() ),
+        mins = VECTOR_ZERO,
+        maxs = VECTOR_ZERO,
+        filter = attacker,
+        mask = MASK_SHOT,
+        collisiongroup = COLLISION_GROUP_NONE,
+    } )
+
+    if tr.Hit and tr.Entity ~= self then return end -- Require direct line of sight from the attacker (no e2/sf autokill nonsense)
 
     local health = self:GetPointHealth()
     local damage = dmg:GetDamage()
