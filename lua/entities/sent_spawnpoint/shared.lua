@@ -1,9 +1,8 @@
 ENT.Type 			= "anim"
 ENT.Base 			= "base_gmodentity"
 ENT.PrintName			= "Mobile Spawnpoint V2"
-ENT.Author			= "Esik1er"
+ENT.Author			= "Esik1er + TwoLemons + StrawWagen"
 ENT.Category        = "CFC"
-ENT.SubCategory     = "Anchors"
 
 ENT.Spawnable			= true
 ENT.AdminSpawnable		= true
